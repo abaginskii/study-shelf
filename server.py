@@ -35,13 +35,13 @@ MAX_BYTES = 60 * 1024 * 1024
 def connect():
     db = sqlite3.connect(DB)
     db.row_factory = sqlite3.Row
-    db.execute('PRAGMA journal_mode=WAL')
     db.execute('PRAGMA foreign_keys=ON')
     return db
 
 
 def init():
     with connect() as db:
+        db.execute('PRAGMA journal_mode=WAL')
         db.executescript('''
         CREATE TABLE IF NOT EXISTS materials (
           id TEXT PRIMARY KEY, title TEXT NOT NULL, subject TEXT NOT NULL DEFAULT 'Без предмета',
