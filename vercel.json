@@ -1,0 +1,1 @@
+{"framework":"nextjs","regions":["fra1"],"functions":{"app/api/[...path]/route.ts":{"maxDuration":120}}}

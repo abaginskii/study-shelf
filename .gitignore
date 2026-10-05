@@ -1,6 +1,10 @@
-__pycache__/
-*.pyc
-.env
+node_modules/
+.next/
+.vercel/
+.env*
+!.env.example
+*.tsbuildinfo
 .DS_Store
+coverage/
 data/
-uploads/
+.vercel

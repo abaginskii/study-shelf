@@ -1,0 +1,5 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {hashPassword,verifyPassword} from '../lib/auth';import {inspectFile} from '../lib/files';import {verifiedQuestions} from '../lib/ai';
+test('password hashes are salted and invalid passwords fail',()=>{const one=hashPassword('long-test-password');const two=hashPassword('long-test-password');assert.notEqual(one,two);assert.equal(verifyPassword('long-test-password',one),true);assert.equal(verifyPassword('wrong-password',one),false)});
+test('HTML/SVG content disguised as PDF or JPG is rejected',()=>{for(const name of ['attack.pdf','attack.jpg','attack.svg'])assert.throws(()=>inspectFile(Buffer.from('<svg onload="alert(1)"></svg>'),name))});
+test('AI quotes must occur exactly in original source',()=>{const q=verifiedQuestions([{question:'Q',answer:'A',sourceQuote:'invented'}],'real source');assert.equal(q[0].sourceQuote,'');assert.equal(verifiedQuestions([{question:'Q',answer:'A',sourceQuote:'real'}],'real source')[0].sourceQuote,'real')});

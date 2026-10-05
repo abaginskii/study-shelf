@@ -1,0 +1,17 @@
+import {createHmac,randomBytes,scryptSync,timingSafeEqual,createHash} from 'node:crypto';
+import {cookies} from 'next/headers';
+import {AppError,readJSON,writeObject} from './storage';
+import type {User} from './types';
+export const usernamePath=(name:string)=>`accounts/${createHash('sha256').update(name.toLowerCase()).digest('hex')}.json`;
+export function hashPassword(password:string){const salt=randomBytes(16).toString('hex');return salt+':'+scryptSync(password,salt,64).toString('hex')}
+export function verifyPassword(password:string,stored:string){const [salt,hash]=stored.split(':');if(!salt||!hash)return false;const derived=scryptSync(password,salt,64);const expected=Buffer.from(hash,'hex');return expected.length===derived.length&&timingSafeEqual(expected,derived)}
+export const hashRecovery=(s:string)=>createHash('sha256').update(s.trim()).digest('hex');
+export function sessionToken(user:User){const secret=process.env.AUTH_SECRET;if(!secret)throw new AppError('Вход ещё не настроен.',503);const body=Buffer.from(JSON.stringify({id:user.id,username:user.username,version:user.version,expires:Date.now()+7*86400000})).toString('base64url');return body+'.'+createHmac('sha256',secret).update(body).digest('base64url')}
+export async function currentUser():Promise<User|null>{const token=(await cookies()).get('polka_session')?.value;const secret=process.env.AUTH_SECRET;if(!token||!secret)return null;try{const [body,sig]=token.split('.');const expected=createHmac('sha256',secret).update(body).digest();const signature=Buffer.from(sig,'base64url');if(signature.length!==expected.length||!timingSafeEqual(signature,expected))return null;const data=JSON.parse(Buffer.from(body,'base64url').toString());if(data.expires<Date.now())return null;const account=await readJSON<User>(usernamePath(data.username));return account&&account.value.id===data.id&&account.value.version===data.version?account.value:null}catch{return null}}
+export async function requireUser(){const user=await currentUser();if(!user)throw new AppError('Войдите в аккаунт.',401);return user}
+export const publicUser=(user:User)=>({id:user.id,username:user.username});
+export async function setSession(user:User){(await cookies()).set('polka_session',sessionToken(user),{httpOnly:true,secure:!!process.env.VERCEL,sameSite:'strict',path:'/',maxAge:7*86400})}
+export async function clearSession(){(await cookies()).delete('polka_session')}
+export function checkOrigin(request:Request){const origin=request.headers.get('origin');const expected=new URL(request.url);expected.host=request.headers.get('host')||expected.host;if(origin&&origin!==expected.origin)throw new AppError('Запрос с другого сайта отклонён.',403)}
+export async function consumeLimit(key:string,limit:number,windowMs:number){const path=`limits/${createHash('sha256').update(key).digest('hex')}/${Math.floor(Date.now()/windowMs)}.json`;for(let i=0;i<5;i++){const old=await readJSON<{count:number}>(path);const count=(old?.value.count||0)+1;if(count>limit)throw new AppError('Слишком много запросов. Попробуйте позже.',429);try{await writeObject(path,JSON.stringify({count}),old?{etag:old.etag}:{createOnly:true});return}catch(e){if(!(e instanceof AppError)||e.status!==409)throw e}}throw new AppError('Слишком много одновременных запросов.',429)}
+export const rateKey=(r:Request)=>r.headers.get('x-vercel-forwarded-for')?.split(',')[0]||r.headers.get('x-forwarded-for')?.split(',')[0]||'local';
