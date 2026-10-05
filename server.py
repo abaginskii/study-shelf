@@ -314,10 +314,18 @@ class Handler(BaseHTTPRequestHandler):
             if not row['original_text'].strip(): self.send(400, {'error': 'Сначала добавьте распознанный текст'}); return
             try: study = ai_study(row['original_text'], row['title']) if AI_KEY else fallback_study(row['original_text'])
             except Exception as e: self.send(502, {'error': 'Не удалось создать конспект: ' + str(e)}); return
+            questions = []
+            for item in study.get('questions', [])[:10]:
+                if not isinstance(item, dict): continue
+                quote = str(item.get('source_quote', ''))[:350]
+                if quote and quote not in row['original_text']: quote = ''
+                questions.append({'question': str(item.get('question', ''))[:500],
+                                  'answer': str(item.get('answer', ''))[:1500],
+                                  'source_quote': quote})
             with connect() as db:
                 db.execute('UPDATE materials SET summary=?,terms=?,questions=?,status=? WHERE id=?',
                     (str(study.get('summary',''))[:20000],json.dumps(study.get('terms',[])[:30],ensure_ascii=False),
-                     json.dumps(study.get('questions',[])[:10],ensure_ascii=False),'ready',row['id']))
+                     json.dumps(questions,ensure_ascii=False),'ready',row['id']))
                 save_search(db,row['id'])
             self.send(200, {'material': public_material(get_material(row['id']))}); return
         if path == '/api/topics':
