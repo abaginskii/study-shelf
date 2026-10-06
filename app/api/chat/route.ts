@@ -1,3 +1,4 @@
+import {requireStudyAccess} from '@/lib/billing';
 import {after} from 'next/server';
 import {requireUser,checkOrigin,consumeLimit} from '@/lib/auth';
 import {AppError,getLibrary,getMaterial,createChat,beginChatTurn,finishChatTurn,safeId} from '@/lib/storage';
@@ -8,7 +9,7 @@ export const maxDuration=120;
 export const dynamic='force-dynamic';
 
 export async function POST(request:Request){return route(async()=>{
- checkOrigin(request);const user=await requireUser();const input=await body(request);
+ checkOrigin(request);const user=await requireUser();requireStudyAccess(await getLibrary(user.id));const input=await body(request);
  if(!aiAvailable())throw new AppError('ИИ ещё не подключён. История и материалы сохранены.',503);
  const action=input.action||'send';if(!['send','retry','regenerate'].includes(action))throw new AppError('Некорректное действие.');
  if(typeof input.requestId!=='string')throw new AppError('Укажите идентификатор запроса.');const requestId=safeId(input.requestId);

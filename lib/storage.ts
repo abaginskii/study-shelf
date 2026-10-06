@@ -1,6 +1,6 @@
-import {get,put,del,BlobPreconditionFailedError} from '@vercel/blob';
+import {get,put,del,list,BlobPreconditionFailedError} from '@vercel/blob';
 import {createHash,randomUUID} from 'node:crypto';
-import {mkdir,readFile,writeFile,rename,unlink} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,rename,unlink,readdir,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {emptyLibrary,type Library,type Material,type MaterialCard,type Chat,type ChatMessage,type Topic,type AssessmentRecord} from './types';
 import {PILOT_LIMITS} from './plans';
@@ -24,6 +24,15 @@ export async function writeObject(path:string,data:Buffer|string,options:{etag?:
  try{await put(path,bytes,{access:'private',addRandomSuffix:false,allowOverwrite:!options.createOnly,ifMatch:options.etag,contentType:options.contentType||'application/json',cacheControlMaxAge:60})}catch(e){if(e instanceof BlobPreconditionFailedError || /already exists/i.test(String(e)))throw new AppError('Конфликт изменений',409);throw e}
 }
 export async function removeObject(path:string){validPath(path);if(local()){await unlink(join(local()!,path)).catch(e=>{if(e.code!=='ENOENT')throw e});return}await del(path)}
+// Metadata only; access to this helper must be checked by its caller.
+export async function listObjects(prefix:string,limit=100,cursor?:string):Promise<{objects:{pathname:string;size:number;uploadedAt:string}[];cursor?:string;hasMore:boolean}>{
+ if(prefix)validPath(prefix);if(!storageReady())throw new AppError('Хранилище ещё не подключено.',503);
+ limit=Math.max(1,Math.min(1000,Math.floor(limit)));
+ if(!local()){const result=await list({prefix,limit,cursor});return {objects:result.blobs.map(blob=>({pathname:blob.pathname,size:blob.size,uploadedAt:blob.uploadedAt.toISOString()})),cursor:result.cursor,hasMore:result.hasMore}}
+ const objects:{pathname:string;size:number;uploadedAt:string}[]=[];
+ async function walk(path:string){const entries=await readdir(join(local()!,path),{withFileTypes:true}).catch(error=>{if(error.code==='ENOENT')return [];throw error});for(const entry of entries){const pathname=path?path+'/'+entry.name:entry.name;if(entry.isDirectory())await walk(pathname);else if(entry.isFile()&&pathname.startsWith(prefix)){const info=await stat(join(local()!,pathname));objects.push({pathname,size:info.size,uploadedAt:info.mtime.toISOString()})}}}
+ await walk('');objects.sort((a,b)=>a.pathname.localeCompare(b.pathname));const start=cursor?Number(cursor):0;if(!Number.isSafeInteger(start)||start<0)throw new AppError('Некорректная страница.');const hasMore=start+limit<objects.length;return {objects:objects.slice(start,start+limit),hasMore,cursor:hasMore?String(start+limit):undefined};
+}
 export async function readJSON<T>(path:string):Promise<{value:T;etag:string}|null>{const result=await readObject(path);return result?{value:JSON.parse(result.data.toString()),etag:result.etag}:null}
 export const userPath=(id:string)=>`users/${id}`;
 export const libPath=(id:string)=>`${userPath(id)}/library.json`;

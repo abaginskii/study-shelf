@@ -7,6 +7,7 @@ import {consumeLimit} from './auth';
 import {inspectFile} from './files';
 import type {Material,Question,Chat,ChatSource,Concept,Assessment,AssessmentRecord} from './types';
 import {PILOT_LIMITS,AI_PERIOD_MS} from './plans';
+import {requireStudyAccess,subscriptionAccess} from './billing';
 
 const GOOGLE_MODEL='gemini-3.1-flash-lite';
 const usesGoogle=()=>!!process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim();
@@ -18,6 +19,8 @@ export async function aiQuota(uid:string){
  if(!aiAvailable())throw new AppError('ИИ ещё не подключён. Материал сохранён; обработку можно повторить позже.',503);
  await mutateLibrary(uid,lib=>{
   const now=new Date();const day=now.toISOString().slice(0,10);if(lib.aiUsage.day!==day)lib.aiUsage={day,count:0};
+  requireStudyAccess(lib);const access=subscriptionAccess(lib);
+  if(access.paid&&access.startsAt&&lib.aiPeriod?.startedAt!==access.startsAt)lib.aiPeriod={startedAt:access.startsAt,count:0};
   const startedAt=Date.parse(lib.aiPeriod?.startedAt||'');
   if(!Number.isFinite(startedAt)||startedAt>now.getTime()||startedAt+AI_PERIOD_MS<=now.getTime())lib.aiPeriod={startedAt:now.toISOString(),count:0};
   if(lib.aiUsage.count>=PILOT_LIMITS.aiDaily)throw new AppError(`На сегодня использованы ${PILOT_LIMITS.aiDaily} запросов к ИИ. Возвращайтесь завтра.`,429);

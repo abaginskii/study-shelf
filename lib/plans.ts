@@ -1,4 +1,4 @@
-/** Published product limits. Billing is intentionally not enabled yet. */
+/** Published product limits. Checkout is enabled only by server configuration. */
 export const PLAN = { name: 'Полка', priceRub: 399, periodDays: 30, aiPeriod: 100 } as const;
 export const PILOT_LIMITS = {
   materials: 100,

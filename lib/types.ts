@@ -11,13 +11,14 @@ export type ChatGeneration={modelName:string;tokenUsage:{input:number|null;outpu
 export type ChatMessage={id:string;role:'user'|'assistant';content:string;createdAt:string;requestId?:string;sources?:ChatSource[];status?:'complete'|'interrupted'|'failed';generation?:ChatGeneration};
 export type ChatCard={id:string;title:string;updatedAt:string;materialIds:string[]};
 export type Chat=ChatCard&{messages:ChatMessage[];answerVersions?:ChatMessage[];status:'idle'|'streaming'|'failed';revision:number;error?:string;pending?:{requestId:string;assistantMessageId:string;userMessageId:string;startedAt:number}};
-export type Library={materials:MaterialCard[];topics:Topic[];reviews:number;chats?:ChatCard[];uploads?:{pathname:string;size:number;createdAt:number}[];aiUsage:{day:string;count:number};aiPeriod?:{startedAt:string;count:number}};
+export type SubscriptionPeriod={orderId:string;startsAt:string;endsAt:string;originalEndsAt:string;refundedRub:number};
+export type Library={materials:MaterialCard[];topics:Topic[];reviews:number;chats?:ChatCard[];uploads?:{pathname:string;size:number;createdAt:number}[];aiUsage:{day:string;count:number};aiPeriod?:{startedAt:string;count:number};subscription?:{periods:SubscriptionPeriod[];updatedAt:string};paymentOrders?:string[]};
 export type User={id:string;username:string;passwordHash:string;recoveryHash:string;createdAt:string;version:number};
 export type AccountSummary={
  user:{id:string;username:string;createdAt:string};
- access:{kind:'pilot';status:'active';paid:false;billingEnabled:false};
+ access:{kind:'pilot'|'subscription';status:'active'|'expired';paid:boolean;billingEnabled:boolean;startsAt?:string;endsAt?:string;test?:boolean};
  usage:{materials:{used:number;limit:number};storage:{used:number;limit:number;filesBytes:number;reservedBytes:number};ai:{used:number;limit:number;remaining:number;resetsAt:string;periodUsed:number;periodLimit:number;periodRemaining:number;periodResetsAt:string|null};topics:{used:number;limit:number};chats:{used:number;limit:number};reviews:{used:number}};
  limits:{uploadBytes:number;aiFileBytes:number;chatQuestions:number;chatAnswers:number};
- aiAvailable:boolean;exportUrl:'/api/export';
+ aiAvailable:boolean;owner?:boolean;exportUrl:'/api/export';
 };
 export const emptyLibrary=():Library=>({materials:[],topics:[],reviews:0,aiUsage:{day:'',count:0}});
