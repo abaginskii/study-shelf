@@ -1,6 +1,8 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {readObject,writeObject,AppError,saveMaterial,getMaterial,applyMaterialResult,createChat,getChat,beginChatTurn,finishChatTurn,deleteChat} from '../lib/storage';
@@ -20,7 +22,7 @@ test('private Blob JSON uses the strong identity validator and stale CAS still f
 });
 
 test('AI results preserve metadata edits and reject changed source text',async()=>{
- const dir=await mkdtemp('/private/tmp/polka-source-test-');const data=process.env.LOCAL_DATA_DIR;const vercel=process.env.VERCEL;process.env.LOCAL_DATA_DIR=dir;delete process.env.VERCEL;
+ const dir=await mkdtemp(join(tmpdir(),'polka-source-test-'));const data=process.env.LOCAL_DATA_DIR;const vercel=process.env.VERCEL;process.env.LOCAL_DATA_DIR=dir;delete process.env.VERCEL;
  try{
   const now=new Date().toISOString();const material:Material={id:randomUUID(),title:'Lecture',subject:'Math',kind:'pdf',createdAt:now,updatedAt:now,status:'inbox',excerpt:'',hasFile:false,text:'Original source text',summary:'',terms:[],questions:[],sourceVersion:1,revision:1};
   await saveMaterial('user-a',material);const snapshot=(await getMaterial('user-a',material.id)).value;
@@ -33,7 +35,7 @@ test('AI results preserve metadata edits and reject changed source text',async()
 });
 
 test('server chat history supports idempotence, interruption, retry and owner isolation',async()=>{
- const dir=await mkdtemp('/private/tmp/polka-chat-test-');const data=process.env.LOCAL_DATA_DIR;const vercel=process.env.VERCEL;process.env.LOCAL_DATA_DIR=dir;delete process.env.VERCEL;
+ const dir=await mkdtemp(join(tmpdir(),'polka-chat-test-'));const data=process.env.LOCAL_DATA_DIR;const vercel=process.env.VERCEL;process.env.LOCAL_DATA_DIR=dir;delete process.env.VERCEL;
  try{
   const requestId=randomUUID();const chat=await createChat('user-a','What is a derivative?',[],requestId);
   assert.equal((await createChat('user-a','What is a derivative?',[],requestId)).id,chat.id);
@@ -55,7 +57,7 @@ test('server chat history supports idempotence, interruption, retry and owner is
 });
 
 test('Gemini chat streams real deltas and receives saved conversation context',async()=>{
- const dir=await mkdtemp('/private/tmp/polka-stream-test-');const names=['LOCAL_DATA_DIR','VERCEL','GOOGLE_GENERATIVE_AI_API_KEY','AI_MODEL'];const old=Object.fromEntries(names.map(name=>[name,process.env[name]]));const fetch=globalThis.fetch;
+ const dir=await mkdtemp(join(tmpdir(),'polka-stream-test-'));const names=['LOCAL_DATA_DIR','VERCEL','GOOGLE_GENERATIVE_AI_API_KEY','AI_MODEL'];const old=Object.fromEntries(names.map(name=>[name,process.env[name]]));const fetch=globalThis.fetch;
  process.env.LOCAL_DATA_DIR=dir;delete process.env.VERCEL;process.env.GOOGLE_GENERATIVE_AI_API_KEY='mock-key';process.env.AI_MODEL='gemini-3.1-flash-lite';
  globalThis.fetch=async(url,init)=>{
   assert.match(String(url),/streamGenerateContent/);const payload=JSON.parse(String(init?.body));assert.ok(payload.contents.some((m:{parts:{text:string}[]})=>m.parts.some(p=>p.text.includes('rate of change'))));
