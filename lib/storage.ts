@@ -2,7 +2,7 @@ import {get,put,del,BlobPreconditionFailedError} from '@vercel/blob';
 import {createHash,randomUUID} from 'node:crypto';
 import {mkdir,readFile,writeFile,rename,unlink} from 'node:fs/promises';
 import {join} from 'node:path';
-import {emptyLibrary,type Library,type Material,type MaterialCard} from './types';
+import {emptyLibrary,type Library,type Material,type MaterialCard,type Chat,type ChatMessage} from './types';
 export class AppError extends Error {constructor(message:string,public status=400){super(message)}}
 const local=()=>process.env.LOCAL_DATA_DIR && !process.env.VERCEL ? process.env.LOCAL_DATA_DIR : undefined;
 export const storageReady=()=>!!(local()||process.env.BLOB_READ_WRITE_TOKEN||process.env.BLOB_STORE_ID);
@@ -11,7 +11,8 @@ const sha=(data:Uint8Array)=>createHash('sha256').update(data).digest('hex');
 export async function readObject(path:string):Promise<{data:Buffer;etag:string}|null>{
  validPath(path);if(!storageReady())throw new AppError('Хранилище ещё не подключено. Попробуйте позже.',503);
  if(local()){try{const data=await readFile(join(local()!,path));return {data,etag:sha(data)}}catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return null;throw e}}
- const result=await get(path,{access:'private',useCache:false});
+ // CAS must use the validator for the exact, uncompressed JSON representation.
+ const result=await get(path,{access:'private',useCache:false,headers:{'Accept-Encoding':'identity'}});
  if(!result?.stream)return null;return {data:Buffer.from(await new Response(result.stream).arrayBuffer()),etag:result.blob.etag};
 }
 const locks=new Map<string,Promise<unknown>>();
@@ -34,3 +35,77 @@ export function card(m:Material):MaterialCard{return {id:m.id,title:m.title,subj
 export async function saveMaterial(uid:string,m:Material,etag?:string,staged?:string){await writeObject(materialPath(uid,m.id),JSON.stringify(m),etag?{etag}:{createOnly:true});await mutateLibrary(uid,lib=>{const idx=lib.materials.findIndex(x=>x.id===m.id);if(idx<0){if(etag)throw new AppError('Материал уже удалён.',404);if(lib.materials.reduce((sum,x)=>sum+(x.size||0),0)+(lib.uploads||[]).filter(x=>x.pathname!==staged).reduce((sum,x)=>sum+x.size,0)+(m.size||0)>300*1024*1024)throw new AppError('Лимит хранилища: 300 МБ.');if(lib.materials.length>=100)throw new AppError('Достигнут лимит: 100 материалов. Удалите ненужные.');lib.materials.unshift(card(m))}else {if((lib.materials[idx].revision||1)>(m.revision||1))throw new AppError('Материал изменён в другой вкладке.',409);lib.materials[idx]=card(m)}if(staged)lib.uploads=(lib.uploads||[]).filter(x=>x.pathname!==staged)})}
 
 export async function fileStream(path:string,range:string|null){validPath(path);if(local()){const result=await readObject(path);return result?{stream:new Response(new Uint8Array(result.data)).body,contentRange:null,size:result.data.length}:null}const result=await get(path,{access:'private',useCache:false,headers:range?{Range:range}:undefined});return result?.stream?{stream:result.stream,contentRange:result.headers.get('content-range'),size:Number(result.headers.get('content-length')||result.blob.size||0)}:null}
+
+// Rebase AI results over metadata edits, while rejecting changes to their source.
+export async function applyMaterialResult(uid:string,snapshot:Material,changes:Partial<Material>){
+ for(let attempt=0;attempt<5;attempt++){
+  const latest=await getMaterial(uid,snapshot.id);
+  if(latest.value.sourceVersion!==snapshot.sourceVersion||latest.value.text!==snapshot.text)throw new AppError('Текст источника изменился во время обработки. Создайте конспект по обновлённому тексту.',409);
+  const material={...latest.value,...changes,updatedAt:new Date().toISOString(),revision:(latest.value.revision||1)+1};
+  try{await saveMaterial(uid,material,latest.etag);return material}catch(error){if(!(error instanceof AppError)||error.status!==409)throw error}
+ }
+ throw new AppError('Материал изменяется в другой вкладке. Повторите обработку.',409);
+}
+
+const chatPath=(uid:string,id:string)=>`${userPath(uid)}/chats/${safeId(id)}.json`;
+const chatCard=(chat:Chat)=>({id:chat.id,title:chat.title,updatedAt:chat.updatedAt,materialIds:chat.materialIds});
+export async function getChat(uid:string,id:string){
+ if(!(await getLibrary(uid)).chats?.some(chat=>chat.id===safeId(id)))throw new AppError('Чат не найден.',404);
+ const result=await readJSON<Chat>(chatPath(uid,id));if(!result)throw new AppError('Чат не найден.',404);return result;
+}
+export async function mutateChat(uid:string,id:string,change:(chat:Chat)=>void){
+ for(let attempt=0;attempt<5;attempt++){
+  const old=await getChat(uid,id);const chat=old.value;change(chat);chat.revision++;chat.updatedAt=new Date().toISOString();
+  try{await writeObject(chatPath(uid,id),JSON.stringify(chat),{etag:old.etag})}catch(error){if(error instanceof AppError&&error.status===409)continue;throw error}
+  // History is authoritative; a delayed card refresh must not undo a saved turn.
+  await mutateLibrary(uid,lib=>{const index=lib.chats?.findIndex(x=>x.id===id)??-1;if(index>=0&&lib.chats![index].updatedAt<=chat.updatedAt)lib.chats![index]=chatCard(chat)}).catch(()=>console.error('Chat index refresh deferred'));
+  return chat;
+ }
+ throw new AppError('Чат изменился в другой вкладке. Обновите историю.',409);
+}
+export async function createChat(uid:string,message:string,materialIds:string[],id:string=randomUUID()){
+ const now=new Date().toISOString();const chat:Chat={id,title:message.slice(0,80),updatedAt:now,materialIds,messages:[],status:'idle',revision:1};
+ try{await writeObject(chatPath(uid,id),JSON.stringify(chat),{createOnly:true})}catch(error){if(error instanceof AppError&&error.status===409)return (await getChat(uid,id)).value;throw error}
+ try{await mutateLibrary(uid,lib=>{lib.chats??=[];if(lib.chats.length>=30)throw new AppError('Можно сохранить до 30 чатов. Удалите ненужные.');lib.chats.unshift(chatCard(chat))})}catch(error){await removeObject(chatPath(uid,id));throw error}
+ return chat;
+}
+export async function beginChatTurn(uid:string,id:string,input:{requestId:string;message?:string;materialIds?:string[];action:'send'|'retry'|'regenerate'}){
+ const old=(await getChat(uid,id)).value;
+ const completed=old.messages.find(message=>message.role==='assistant'&&message.requestId===input.requestId&&message.status==='complete');
+ if(completed)return {chat:old,replay:completed};
+ let replay:ChatMessage|undefined;
+ const chat=await mutateChat(uid,id,chat=>{
+  replay=chat.messages.find(message=>message.role==='assistant'&&message.requestId===input.requestId&&message.status==='complete');if(replay)return;
+  if(chat.pending&&chat.pending.startedAt>Date.now()-150000)throw new AppError('В этом чате уже готовится ответ. Дождитесь его или обновите историю.',409);
+  if(chat.messages.filter(m=>m.role==='assistant').length+(chat.answerVersions?.length||0)>=40)throw new AppError('В этом чате уже 40 ответов и вариантов. Создайте новый чат; текущая история сохранится.');
+  if(input.materialIds!==undefined)chat.materialIds=input.materialIds;
+  let userMessage:ChatMessage;
+  if(input.action==='send'){
+   if(!input.message?.trim())throw new AppError('Напишите сообщение.');
+   // A retried HTTP request with the same id does not duplicate its user turn.
+   const existing=chat.messages.find(m=>m.role==='user'&&m.requestId===input.requestId);
+   if(existing&&(existing.id!==chat.messages.findLast(m=>m.role==='user')?.id||existing.content!==input.message))throw new AppError('Этот запрос уже относится к предыдущему сообщению. Обновите историю чата.',409);
+   if(!existing&&chat.messages.length>=39)throw new AppError('В этом чате уже 20 вопросов. Создайте новый чат; история текущего сохранится.');
+   userMessage=existing||{id:randomUUID(),role:'user',content:input.message,createdAt:new Date().toISOString(),requestId:input.requestId};
+   if(!chat.messages.some(m=>m.id===userMessage.id))chat.messages.push(userMessage);
+  }else{
+   const lastUser=chat.messages.findLast(m=>m.role==='user');if(!lastUser)throw new AppError('В чате ещё нет вопроса.');userMessage=lastUser;
+  }
+  chat.pending={requestId:input.requestId,userMessageId:userMessage.id,assistantMessageId:randomUUID(),startedAt:Date.now()};chat.status='streaming';chat.error=undefined;
+ });
+ return {chat,replay};
+}
+export async function finishChatTurn(uid:string,id:string,requestId:string,content:string,sources:ChatMessage['sources'],error?:string,generation?:ChatMessage['generation']){
+ return mutateChat(uid,id,chat=>{
+  const pending=chat.pending;if(!pending||pending.requestId!==requestId)throw new AppError('Этот ответ больше не является текущим.',409);
+  const userIndex=chat.messages.findIndex(m=>m.id===pending.userMessageId);if(userIndex<0)throw new AppError('Вопрос не найден.',409);
+  if(error&&!content.trim()){chat.status='failed';chat.error=error;chat.pending=undefined;return}
+  const previous=chat.messages.slice(userIndex+1).filter(message=>message.role==='assistant');
+  if(previous.length)chat.answerVersions=[...(chat.answerVersions||[]),...previous];
+  // Retry replaces the previous assistant answer, keeping the original user turn.
+  chat.messages=chat.messages.slice(0,userIndex+1);
+  if(content.trim())chat.messages.push({id:pending.assistantMessageId,role:'assistant',content,createdAt:new Date().toISOString(),requestId,sources,status:error?'interrupted':'complete',generation});
+  chat.status=error?'failed':'idle';chat.error=error;chat.pending=undefined;
+ });
+}
+export async function deleteChat(uid:string,id:string){await getChat(uid,id);await mutateLibrary(uid,lib=>{lib.chats=(lib.chats||[]).filter(chat=>chat.id!==id)});await removeObject(chatPath(uid,id))}
