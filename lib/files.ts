@@ -1,5 +1,6 @@
 import type {Kind} from './types';import {AppError} from './storage';
-export const MAX_UPLOAD=60*1024*1024;
+import {PILOT_LIMITS} from './plans';
+export const MAX_UPLOAD=PILOT_LIMITS.uploadBytes;
 export function inspectFile(data:Buffer,name:string):{kind:Kind;mime:string}{
  const ext=name.toLowerCase().split('.').pop();
  if(ext==='pdf'&&data.subarray(0,5).toString()==='%PDF-')return {kind:'pdf',mime:'application/pdf'};

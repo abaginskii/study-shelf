@@ -1,13 +1,23 @@
 export type Kind='text'|'pdf'|'image'|'audio'|'video';
 export type Question={question:string;answer:string;sourceQuote:string};
+export type Concept={title:string;description:string;sourceQuote:string};
+export type Assessment={score:number;verdict:'correct'|'partial'|'incorrect';feedback:string;missing:string[];sourceQuote:string};
+export type AssessmentRecord=Assessment&{id:string;questionIndex:number;question:string;answer:string;sourceVersion:number;createdAt:string;generation:ChatGeneration};
 export type MaterialCard={id:string;title:string;subject:string;kind:Kind;createdAt:string;updatedAt:string;status:'inbox'|'ready';excerpt:string;hasFile:boolean;filename?:string;size?:number;revision?:number};
-export type Material=MaterialCard&{text:string;summary:string;terms:string[];questions:Question[];mime?:string;size?:number;warning?:string;sourceVersion:number;summaryVersion?:number;aiGenerated?:boolean;filePath?:string};
-export type Topic={id:string;title:string;body:string;materialId:string;createdAt:string};
+export type Material=MaterialCard&{text:string;summary:string;terms:string[];concepts?:Concept[];assessments?:AssessmentRecord[];questions:Question[];mime?:string;size?:number;warning?:string;sourceVersion:number;summaryVersion?:number;aiGenerated?:boolean;filePath?:string};
+export type Topic={id:string;title:string;body:string;materialId:string;createdAt:string;sourceQuote?:string;sourceVersion?:number};
 export type ChatSource={id:string;title:string;index:number};
 export type ChatGeneration={modelName:string;tokenUsage:{input:number|null;output:number|null;total:number|null};estimatedCost:null};
 export type ChatMessage={id:string;role:'user'|'assistant';content:string;createdAt:string;requestId?:string;sources?:ChatSource[];status?:'complete'|'interrupted'|'failed';generation?:ChatGeneration};
 export type ChatCard={id:string;title:string;updatedAt:string;materialIds:string[]};
 export type Chat=ChatCard&{messages:ChatMessage[];answerVersions?:ChatMessage[];status:'idle'|'streaming'|'failed';revision:number;error?:string;pending?:{requestId:string;assistantMessageId:string;userMessageId:string;startedAt:number}};
-export type Library={materials:MaterialCard[];topics:Topic[];reviews:number;chats?:ChatCard[];uploads?:{pathname:string;size:number;createdAt:number}[];aiUsage:{day:string;count:number}};
+export type Library={materials:MaterialCard[];topics:Topic[];reviews:number;chats?:ChatCard[];uploads?:{pathname:string;size:number;createdAt:number}[];aiUsage:{day:string;count:number};aiPeriod?:{startedAt:string;count:number}};
 export type User={id:string;username:string;passwordHash:string;recoveryHash:string;createdAt:string;version:number};
+export type AccountSummary={
+ user:{id:string;username:string;createdAt:string};
+ access:{kind:'pilot';status:'active';paid:false;billingEnabled:false};
+ usage:{materials:{used:number;limit:number};storage:{used:number;limit:number;filesBytes:number;reservedBytes:number};ai:{used:number;limit:number;remaining:number;resetsAt:string;periodUsed:number;periodLimit:number;periodRemaining:number;periodResetsAt:string|null};topics:{used:number;limit:number};chats:{used:number;limit:number};reviews:{used:number}};
+ limits:{uploadBytes:number;aiFileBytes:number;chatQuestions:number;chatAnswers:number};
+ aiAvailable:boolean;exportUrl:'/api/export';
+};
 export const emptyLibrary=():Library=>({materials:[],topics:[],reviews:0,aiUsage:{day:'',count:0}});
