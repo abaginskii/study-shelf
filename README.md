@@ -29,6 +29,8 @@ pnpm dev
 
 ## Vercel
 
+Подготовка переноса на российский сервер и выявленные ограничения бесплатного размещения: [docs/russian-hosting.md](docs/russian-hosting.md). Standalone runtime ещё не переносит Vercel Blob или подключение Gemini.
+
 1. Импортируйте репозиторий как Next.js проект.
 2. Создайте **Private** Vercel Blob и подключите к проекту. SDK использует `BLOB_STORE_ID` с автоматическим OIDC либо `BLOB_READ_WRITE_TOKEN`.
 3. Задайте `AUTH_SECRET` случайной строкой минимум 32 байта. Секреты не публикуйте в Git.
