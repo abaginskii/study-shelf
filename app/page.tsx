@@ -10,7 +10,7 @@ import AITextLoading from "@/components/kokonutui/ai-text-loading";
 import { LegalFooter } from "@/components/legal/footer";
 import { SubscriptionPreview } from "@/components/legal/subscription-preview";
 const AccountPage = dynamic(() => import("@/components/account/account-page"), { loading: () => <div className="loading-panel"><Spinner label="Открываем аккаунт…" /></div> });
-const ChatPanel = dynamic(() => import("@/components/chat/chat-panel"), { loading: () => <div className="loading-panel"><Spinner label="Открываем помощника…" /></div> });
+const ChatPanel = dynamic(() => import("@/components/chat/chat-panel"), { loading: () => <div className="loading-panel"><Spinner label="Открываем polka.ai…" /></div> });
 
 type User = { id: string; username: string };
 type LibraryData = { materials: MaterialCard[]; topics: Topic[]; stats: { materials: number; topics: number; inbox: number; reviews: number } };
@@ -23,7 +23,7 @@ const navigation = [
   { id: "subjects" as Page, label: "Предметы", icon: FolderOpen },
   { id: "knowledge" as Page, label: "База знаний", icon: BookOpen },
   { id: "review" as Page, label: "Повторение", icon: GraduationCap },
-  { id: "assistant" as Page, label: "Помощник", icon: MessageCircle },
+  { id: "assistant" as Page, label: "polka.ai", icon: MessageCircle },
   { id: "account" as Page, label: "Аккаунт", icon: UserRound },
 ];
 const dateFormatter = new Intl.DateTimeFormat("ru", { day: "numeric", month: "short" });
@@ -187,7 +187,7 @@ export default function App() {
           </> : page === "review" ? <>
             <PageHeading eyebrow="ВСПОМНИТЬ И ПОНЯТЬ" title="Немного практики" text="Ответьте своими словами. Сверьтесь с материалом." />{quiz ? <QuizSession key={quiz.material.id} material={quiz.material} exit={() => setQuiz(null)} openMaterial={openMaterial} saved={refreshLibrary} /> : library.materials.filter(m => m.status === "ready").length ? <div className="review-list">{library.materials.filter(m => m.status === "ready").map(material => <div className="review-row panel" key={material.id}><span className="stat-icon lavender"><GraduationCap size={23} /></span><div><span className="eyebrow">{material.subject || "Без предмета"}</span><h3>{material.title}</h3><p>Вопросы, ответы и фрагменты источника</p></div><button className="button primary" disabled={!!busy} onClick={() => startQuiz(material.id)}>Повторить <ArrowRight size={16} /></button></div>)}</div> : <Empty icon={<GraduationCap size={28} />} title="Сначала материал, потом практика" action={<button className="button primary" onClick={() => navigate("materials")}>К материалам <ArrowRight size={17} /></button>}>Создайте конспект хотя бы одного материала. Вместе с ним появятся вопросы для повторения.</Empty>}
           </> : page === "account" ? <AccountPage username={user.username} busy={busy} exportData={exportData} logout={logout} /> : <>
-            <ChatPanel key={user.id} materials={library.materials} aiAvailable={aiAvailable} username={user.username} openMaterial={openMaterial} addMaterial={() => setUploadOpen(true)} />
+            <ChatPanel key={user.id} materials={library.materials} aiAvailable={aiAvailable} username={user.username} openMaterial={openMaterial} />
           </>}
           {page !== "assistant" || detail ? <LegalFooter compact /> : null}
         </main>
