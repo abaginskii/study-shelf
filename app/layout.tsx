@@ -1,9 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./legal.css";
-import "./theme.css";
 import {PWAProvider} from '@/components/pwa/provider';
-import { ThemeProvider } from '@/components/theme/theme-provider';
 
 export const metadata: Metadata = {
   title: "Полка — место, где знания остаются с вами",
@@ -16,5 +14,5 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f8f7fc", viewportFit: "cover" };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ru" suppressHydrationWarning><head><script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('polka_theme_v1');if(t==='dark'||t==='light')document.documentElement.dataset.theme=t}catch{}" }} /></head><body><ThemeProvider><PWAProvider>{children}</PWAProvider></ThemeProvider></body></html>;
+  return <html lang="ru"><body><PWAProvider>{children}</PWAProvider></body></html>;
 }
