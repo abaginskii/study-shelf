@@ -90,3 +90,26 @@ html[data-chat-keyboard="open"] .app-shell:has(.workspace-chat) .mobile-nav{disp
 @media(max-width:720px){.topbar .button{width:44px;height:44px;min-height:44px}.mobile-menu>summary{width:44px;height:44px}.icon-button{min-width:40px;min-height:40px}}
 
 .account-order{display:flex;gap:16px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding:16px 0}.account-order strong{font-size:13px}.account-order p,.account-order small{font-size:11px;color:var(--muted);margin-top:5px;overflow-wrap:anywhere}.account-order>div{min-width:0}.account-order .button{flex:none}
+
+/* React Bits PromptBar adapted for the polka.ai conversation composer. */
+.polka-prompt-bar.prompt-bar { width: 100%; --pb-hover: rgb(48 43 54 / 7%); }
+.polka-prompt-bar .prompt-bar__field { gap: 0; padding: 6px 7px 6px 16px; border: 1px solid #e4e0e9; border-radius: 999px; background: #fff; box-shadow: 0 8px 28px rgb(44 33 55 / 7%); transition: border-color 180ms ease, box-shadow 180ms ease; }
+.polka-prompt-bar .prompt-bar__field:focus-within { border-color: #c9b6d9; box-shadow: 0 8px 30px rgb(94 64 119 / 12%), 0 0 0 3px rgb(155 122 202 / 9%); }
+.polka-prompt-bar .prompt-bar__input { min-height: 24px; padding: 2px 0; font-size: 14px; line-height: 20px; }
+.polka-prompt-bar .prompt-bar__input::placeholder { color: #8c8792; }
+.polka-prompt-bar .prompt-bar__bar { min-height: 30px; margin-top: 0; }
+.polka-prompt-bar .prompt-bar__tool { display: none; }
+.polka-prompt-bar .prompt-bar__send { width: 32px; height: 32px; border-radius: 50%; background: #efedf2; color: #8a8490; }
+.polka-prompt-bar .prompt-bar__send[data-armed] { background: #27242c; color: #fff; }
+.polka-prompt-bar .prompt-bar__send:disabled { opacity: .65; }
+.landing-border-glow { min-width: 0; height: 100%; }
+.landing-border-glow .border-glow-inner { height: 100%; overflow: hidden; border-radius: inherit; }
+.landing-border-glow .how-card { height: 100%; border: 0; border-radius: inherit; background: transparent; }
+@media (max-width: 760px) {
+  .polka-prompt-bar .prompt-bar__field { padding: 5px 6px 5px 13px; }
+  .polka-prompt-bar .prompt-bar__send { width: 34px; height: 34px; }
+  .polka-prompt-bar .prompt-bar__input { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .polka-prompt-bar .prompt-bar__field { transition: none; }
+}

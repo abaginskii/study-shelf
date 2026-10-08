@@ -1,8 +1,8 @@
 # Third-party notices
 
-## React Bits — Lattice Loader
+## React Bits components
 
-Source: https://www.reactbits.dev/micro/lattice-loader
+The following adapted components are included: Lattice Loader (https://www.reactbits.dev/micro/lattice-loader), PromptBar (https://reactbits.dev), and BorderGlow (https://reactbits.dev).
 
 MIT + Commons Clause License Condition v1.0  
 Copyright (c) 2026 David Haz
