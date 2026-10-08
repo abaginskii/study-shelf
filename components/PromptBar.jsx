@@ -607,7 +607,7 @@ export default function PromptBar({
           rows={1}
           value={draft}
           placeholder={listening ? 'Listening…' : placeholder}
-          aria-label="Prompt"
+          aria-label="Сообщение для polka.ai"
           disabled={disabled}
           onChange={e => {
             setDraft(e.target.value);
@@ -706,7 +706,7 @@ export default function PromptBar({
             type="button"
             className="prompt-bar__send"
             disabled={!armed}
-            aria-label={busy ? 'Stop' : 'Send'}
+            aria-label={busy ? 'Остановить генерацию' : 'Отправить сообщение'}
             data-armed={armed ? '' : undefined}
             data-pressed={pressed ? '' : undefined}
             onMouseDown={e => e.preventDefault()}
