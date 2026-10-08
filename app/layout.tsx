@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./legal.css";
 import "./theme.css";
-import "./brand-refresh.css";
 import {PWAProvider} from '@/components/pwa/provider';
 import { ThemeProvider } from '@/components/theme/theme-provider';
 
