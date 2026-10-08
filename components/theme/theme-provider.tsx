@@ -6,6 +6,10 @@ import { Check, Moon, Sun } from "lucide-react";
 type Theme = "light" | "dark";
 type ThemeContextValue = { theme: Theme; setTheme: (theme: Theme) => void; toggleTheme: () => void };
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+function applyTheme(next: Theme) {
+  document.documentElement.dataset.theme = next;
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", next === "dark" ? "#171714" : "#f4f1e9");
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, updateTheme] = useState<Theme>("light");
@@ -14,12 +18,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       const saved = localStorage.getItem("polka_theme_v1");
       const initial: Theme = saved === "dark" || saved === "light" ? saved : document.documentElement.dataset.theme === "dark" ? "dark" : "light";
       updateTheme(initial);
-      document.documentElement.dataset.theme = initial;
+      applyTheme(initial);
     } catch { /* Keep the default theme when storage is unavailable. */ }
   }, []);
   const setTheme = useCallback((next: Theme) => {
     updateTheme(next);
-    document.documentElement.dataset.theme = next;
+    applyTheme(next);
     try { localStorage.setItem("polka_theme_v1", next); } catch { /* Theme remains usable when storage is unavailable. */ }
   }, []);
   const toggleTheme = useCallback(() => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark"), [setTheme]);
