@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./legal.css";
+import "./design-v2.css";
 import {PWAProvider} from '@/components/pwa/provider';
 
 export const metadata: Metadata = {
