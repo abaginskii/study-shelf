@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const { randomUUID } = require('node:crypto');
 const { verifyTelegramPromo } = require('./telegram-promo.cjs');
 const { verifyLandingBrand } = require('./landing-brand.cjs');
+const { verifyMobilePilot } = require('./mobile-pilot.cjs');
 const base = process.env.POLKA_TEST_URL || 'http://127.0.0.1:3100';
 assert(['localhost', '127.0.0.1'].includes(new URL(base).hostname), 'Never run fixture tests against production');
 const fixture = JSON.parse(fs.readFileSync(process.env.POLKA_TEST_FIXTURE || '/private/tmp/polka-v2-fixture.json', 'utf8'));
@@ -18,6 +19,11 @@ async function main() {
   const browser = await chromium.launch({ headless: true, channel: 'chrome' });
   const errors = [];
   try {
+    if (process.env.POLKA_TEST_MOBILE_ONLY === '1') {
+      const mobilePassed = await verifyMobilePilot(browser, base, screenshots, fixture);
+      console.log(`${mobilePassed} mobile pilot scenarios passed; screenshots: ${screenshots}`);
+      return;
+    }
     async function navigate(target, name) {
       const desktop = target.locator('[data-workspace-nav]:visible').getByRole('button', { name, exact: true });
       if (await desktop.isVisible()) await desktop.click();
@@ -254,6 +260,7 @@ async function main() {
     await ctx.close();
     passed += await verifyLandingBrand(browser, base, screenshots);
     passed += await verifyTelegramPromo(browser, base, screenshots);
+    passed += await verifyMobilePilot(browser, base, screenshots, fixture);
     console.log(`${passed} browser scenarios passed; screenshots: ${screenshots}`);
   } finally { await browser.close(); }
 }

@@ -90,7 +90,25 @@ export default function ChatPanel({ materials, aiAvailable, username, openMateri
     document.addEventListener("keydown", closeOnEscape);
     return () => { document.removeEventListener("pointerdown", closeOnOutside); document.removeEventListener("keydown", closeOnEscape); };
   }, [infoOpen]);
-  useEffect(() => { const viewport = window.visualViewport; if (!viewport) return; const root = document.documentElement; const update = () => { root.style.setProperty("--visual-height", `${viewport.height}px`); root.dataset.chatKeyboard = window.innerHeight - viewport.height > 160 ? "open" : "closed"; }; update(); viewport.addEventListener("resize", update); return () => { viewport.removeEventListener("resize", update); root.style.removeProperty("--visual-height"); delete root.dataset.chatKeyboard; }; }, []);
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const root = document.documentElement;
+    let frame = 0;
+    const update = () => {
+      root.style.setProperty("--visual-height", `${viewport.height}px`);
+      const editing = document.activeElement?.matches('input, textarea, [contenteditable="true"]');
+      root.dataset.chatKeyboard = editing && window.innerHeight - viewport.height > 160 ? "open" : "closed";
+    };
+    const focusChanged = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(update); };
+    update(); viewport.addEventListener("resize", update);
+    document.addEventListener("focusin", focusChanged); document.addEventListener("focusout", focusChanged);
+    return () => {
+      cancelAnimationFrame(frame); viewport.removeEventListener("resize", update);
+      document.removeEventListener("focusin", focusChanged); document.removeEventListener("focusout", focusChanged);
+      root.style.removeProperty("--visual-height"); delete root.dataset.chatKeyboard;
+    };
+  }, []);
   const scopeIds = scope === "general" ? [] : scope === "library" ? materials.slice(0, 8).map(material => material.id) : [scope];
   const busyElsewhere = active.status === "streaming" && !busy;
 

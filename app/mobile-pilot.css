@@ -1,0 +1,226 @@
+/* Scoped to the owner-only, installed mobile PWA. Regular web and desktop keep the public workspace. */
+html[data-mobile-pilot="true"] { color-scheme:light; background:#f2f3f7; scroll-padding-top:calc(72px + env(safe-area-inset-top,0px)); }
+html[data-mobile-pilot="true"] body { background:#f2f3f7; }
+html[data-mobile-pilot="true"]:has(dialog[open]) { overflow:hidden; }
+.polka-app.mobile-pilot {
+ --mp-safe-top:env(safe-area-inset-top,0px); --mp-safe-bottom:env(safe-area-inset-bottom,0px);
+ --mp-bg:#f2f3f7; --mp-surface:#fff; --mp-inset:#f5f6fa; --mp-ink:#17181d; --mp-muted:#646b76; --mp-line:#e4e7ed;
+ --mp-accent:#0764d7; --mp-accent-soft:#eaf3ff; --mp-accent-line:#d8e8fb; --mp-input:#e9ecf2; --mp-input-line:#e3e7ee;
+ --mp-solid:#17181d; --mp-solid-text:#fff; --mp-olive:#526927; --mp-chrome:rgb(250 251 254 / 94%); --mp-chrome-border:rgb(137 150 169 / 18%); --mp-control-pressed:rgb(71 80 94 / 9%); --mp-handle:#cdd1d9;
+ --bg:var(--mp-bg); --surface:var(--mp-surface); --ink:var(--mp-ink); --muted:var(--mp-muted); --border:var(--mp-line); --purple:var(--mp-accent); --purple-dark:var(--mp-accent); --lavender:var(--mp-accent-soft); --key-shadow:none;
+ color-scheme:light; min-height:100dvh; background:var(--mp-bg); color:var(--mp-ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; font-size:16px; line-height:1.5; font-feature-settings:"calt","kern","liga"; -webkit-text-size-adjust:100%;
+}
+.polka-app.mobile-pilot ::selection { background:var(--mp-accent-soft); color:var(--mp-ink); }
+.polka-app.mobile-pilot :is(h1,h2,h3) { color:var(--mp-ink); font-weight:650; letter-spacing:-.025em; }
+.polka-app.mobile-pilot p { color:var(--mp-muted); }
+.polka-app.mobile-pilot :is(button,a,input,textarea,select):focus-visible { outline:3px solid var(--mp-accent); outline-offset:3px; }
+.polka-app.mobile-pilot button { touch-action:manipulation; }
+.polka-app.mobile-pilot :is(button,a) { transition:background-color .16s,color .16s,transform .16s; }
+.polka-app.mobile-pilot button:active:not(:disabled) { transform:scale(.98); }
+.polka-app.mobile-pilot .app-shell { min-height:100dvh; background:var(--mp-bg); }
+.polka-app.mobile-pilot .app-content { margin:0; }
+.polka-app.mobile-pilot .workspace { width:100%; min-height:calc(100dvh - 56px - var(--mp-safe-top)); max-width:760px; padding:22px max(18px,env(safe-area-inset-right,0px)) calc(100px + var(--mp-safe-bottom)) max(18px,env(safe-area-inset-left,0px)); }
+.polka-app.mobile-pilot .page-heading { gap:12px; align-items:center; margin-bottom:22px; }
+.polka-app.mobile-pilot .page-heading h1,.polka-app.mobile-pilot .detail-heading h1 { color:var(--mp-ink); font-size:30px; line-height:1.15; font-weight:700; letter-spacing:-.9px; margin-top:5px; }
+.polka-app.mobile-pilot .page-heading p { font-size:13px; line-height:1.55; margin-top:9px; }
+.polka-app.mobile-pilot :is(.eyebrow,.panel-label,.small,.muted,.optional,.field-hint) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .eyebrow { font-size:10px; letter-spacing:.8px; }
+.polka-app.mobile-pilot :is(input,textarea,select) { min-height:44px; background:var(--mp-input); border:1px solid var(--mp-input-line); border-radius:13px; color:var(--mp-ink); font-size:16px; padding:12px; }
+.polka-app.mobile-pilot input::placeholder,.polka-app.mobile-pilot textarea::placeholder { color:var(--mp-muted); }
+.polka-app.mobile-pilot option { background:var(--mp-surface); color:var(--mp-ink); }
+.polka-app.mobile-pilot .button { min-height:44px; border:1px solid var(--mp-line); border-radius:13px; padding:11px 14px; background:var(--mp-surface); color:var(--mp-ink); font-size:14px; font-weight:550; box-shadow:none; }
+.polka-app.mobile-pilot .button:hover:not(:disabled) { background:var(--mp-inset); border-color:var(--mp-line); }
+.polka-app.mobile-pilot .button.primary,.polka-app.mobile-pilot .button.dark { background:var(--mp-solid); color:var(--mp-solid-text); border-color:var(--mp-solid); }
+.polka-app.mobile-pilot .button.primary:hover:not(:disabled) { background:var(--mp-solid); border-color:var(--mp-solid); }
+.polka-app.mobile-pilot .button.destructive { background:#b82032; border-color:#b82032; color:#fff; }
+.polka-app.mobile-pilot .button.subtle { background:transparent; }
+.polka-app.mobile-pilot .icon-button { min-width:44px; min-height:44px; width:44px; height:44px; color:var(--mp-muted); border-radius:50%; }
+.polka-app.mobile-pilot .icon-button:hover { background:var(--mp-control-pressed); color:var(--mp-ink); }
+.polka-app.mobile-pilot .icon-button.danger { color:#b82032; }
+.polka-app.mobile-pilot :is(.text-button,.source-link,.back-button,.quiz-exit,.auth-recover,.auth-switch button) { min-height:44px; color:var(--mp-accent); }
+.polka-app.mobile-pilot :is(.text-button,.back-button,.quiz-exit) { font-size:14px; }
+.polka-app.mobile-pilot .workspace>.back-button { display:none; }
+.polka-app.mobile-pilot :is(.tag,.tag-green,.pill,.lavender,.peach,.mint,.stat-icon,.avatar,.subject-icon,.empty-icon,.material-file-icon) { background:var(--mp-accent-soft); color:var(--mp-accent); border-color:var(--mp-accent-line); }
+.polka-app.mobile-pilot :is(.panel,.material-card,.subject-card,.account-card,.review-row,.quiz-card) { background:var(--mp-surface); color:var(--mp-ink); border:1px solid var(--mp-line); border-radius:22px; box-shadow:none; }
+.polka-app.mobile-pilot .panel { padding:21px 18px; }
+.polka-app.mobile-pilot .material-grid,.polka-app.mobile-pilot .subject-grid,.polka-app.mobile-pilot .topic-grid,.polka-app.mobile-pilot .account-grid { grid-template-columns:1fr; gap:14px; }
+.polka-app.mobile-pilot .material-card { min-height:0; padding:20px; border-radius:20px; }
+.polka-app.mobile-pilot .material-card:hover,.polka-app.mobile-pilot .subject-card:hover { background:var(--mp-surface); border-color:var(--mp-line); box-shadow:none; transform:none; }
+.polka-app.mobile-pilot .material-kind-row { color:var(--mp-muted); margin-bottom:15px; }
+.polka-app.mobile-pilot .material-card strong { font-size:18px; color:var(--mp-ink); font-weight:600; line-height:1.4; }
+.polka-app.mobile-pilot .material-card :is(.card-excerpt,.card-subject,.card-footer,.card-filetype,.status) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .card-footer { border-top-color:var(--mp-line); font-size:12px; padding-top:13px; }
+.polka-app.mobile-pilot .status-ready,.polka-app.mobile-pilot .count-badge { color:var(--mp-accent); background:var(--mp-accent-soft); }
+.polka-app.mobile-pilot .status-ready>span { background:var(--mp-accent); }
+.polka-app.mobile-pilot .status>span { background:var(--mp-muted); }
+.polka-app.mobile-pilot .search-field { min-height:48px; padding:0 12px; background:var(--mp-input); border-color:var(--mp-input-line); border-radius:14px; color:var(--mp-muted); }
+.polka-app.mobile-pilot .search-field input { background:transparent; border:0; }
+.polka-app.mobile-pilot .filters { display:flex; flex-direction:column; align-items:stretch; gap:10px; }
+.polka-app.mobile-pilot .filters>select { width:100%; background:var(--mp-surface); border-color:var(--mp-line); color:var(--mp-ink); }
+.polka-app.mobile-pilot :is(.results-label,.subject-card p,.subject-arrow,.topic-card p,.topic-evidence span,.detail-heading p,.original-file small,.detail-aside p,.section-description) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .subject-card { min-height:160px; padding:20px; }
+.polka-app.mobile-pilot .subject-card h2 { color:var(--mp-ink); margin-top:16px; }
+.polka-app.mobile-pilot .empty { background:var(--mp-surface); border-color:var(--mp-line); border-radius:22px; }
+.polka-app.mobile-pilot .empty p { color:var(--mp-muted); font-size:14px; }
+.polka-app.mobile-pilot .detail-heading { gap:8px; }
+.polka-app.mobile-pilot .detail-grid { grid-template-columns:1fr; gap:17px; }
+.polka-app.mobile-pilot .detail-aside { display:flex; flex-direction:column; gap:17px; }
+.polka-app.mobile-pilot .detail-toolbar { flex-direction:column; align-items:stretch; margin:20px 0; }
+.polka-app.mobile-pilot .detail-toolbar .button { width:100%; }
+.polka-app.mobile-pilot .segmented { display:flex; padding:4px; gap:3px; border-radius:12px; background:var(--mp-input); border:1px solid var(--mp-input-line); }
+.polka-app.mobile-pilot .segmented>button { flex:1; min-height:44px; color:var(--mp-muted); font-size:12px; padding:9px 7px; border-radius:9px; }
+.polka-app.mobile-pilot .segmented>button.selected { color:var(--mp-ink); background:var(--mp-surface); box-shadow:0 1px 5px rgb(0 0 0 / 7%); }
+.polka-app.mobile-pilot :is(.prose,.concept-title,.concept-body,.concept-body p,.summary-panel .prose,.source-textarea,.question-list) { color:var(--mp-ink); font-size:15px; line-height:1.75; }
+.polka-app.mobile-pilot :is(.notice,.processing-notice,.original-file,.original-metadata,.review-callout,.answer-box,.answer-assessment,.topic-evidence,.concept-item,.account-access,.usage-meter,.account-mini-stats) { background:var(--mp-inset); border-color:var(--mp-line); color:var(--mp-muted); border-radius:15px; }
+.polka-app.mobile-pilot :is(.notice p,.processing-notice p,.review-callout p,.answer-box p,.answer-assessment p,.answer-assessment li) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .error-notice { background:#fff0f1; border-color:#f0ccd0; color:#9f2331; }
+.polka-app.mobile-pilot .concept-item { border:1px solid var(--mp-line); margin-top:8px; padding:0 12px; }
+.polka-app.mobile-pilot .concept-title { min-height:52px; padding:12px 0; line-height:1.5; }
+.polka-app.mobile-pilot .concept-title>svg,.polka-app.mobile-pilot .terms svg { color:var(--mp-accent); }
+.polka-app.mobile-pilot .concept-title:hover { background:transparent; }
+.polka-app.mobile-pilot :is(blockquote,.topic-evidence,.concept-body blockquote,.answer-box blockquote,.answer-assessment blockquote) { color:var(--mp-muted); border-color:var(--mp-line); background:var(--mp-inset); }
+.polka-app.mobile-pilot .terms button { min-height:44px; background:var(--mp-accent-soft); border-color:var(--mp-accent-line); color:var(--mp-accent); border-radius:12px; }
+.polka-app.mobile-pilot .source-reminder { color:var(--mp-muted); border-top-color:var(--mp-line); }
+.polka-app.mobile-pilot .source-reminder button { color:var(--mp-accent); min-height:44px; margin-left:0; }
+.polka-app.mobile-pilot .source-link { border-color:var(--mp-line); }
+.polka-app.mobile-pilot .review-callout h3 { color:var(--mp-ink); }
+.polka-app.mobile-pilot .review-callout .button { background:var(--mp-surface); border-color:var(--mp-line); color:var(--mp-accent); }
+.polka-app.mobile-pilot .review-row { gap:12px; padding:19px; }
+.polka-app.mobile-pilot .review-row h3 { font-size:17px; color:var(--mp-ink); }
+.polka-app.mobile-pilot .review-row p { color:var(--mp-muted); }
+.polka-app.mobile-pilot .review-row .button { margin-left:49px; min-height:44px; }
+.polka-app.mobile-pilot .quiz-card { padding:23px 19px; }
+.polka-app.mobile-pilot :is(.quiz-meta,.quiz-quota-note,.quiz-card>label,.quiz-result p,.answer-box blockquote>span) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .quiz-card>h2 { font-size:23px; line-height:1.4; }
+.polka-app.mobile-pilot :is(.progress-track,.usage-track) { background:var(--mp-input); }
+.polka-app.mobile-pilot :is(.progress-track>span,.usage-track>span) { background:var(--mp-accent); }
+.polka-app.mobile-pilot .result-icon { color:var(--mp-accent); background:var(--mp-accent-soft); border-color:var(--mp-accent-line); }
+.polka-app.mobile-pilot .quiz-actions .button { min-height:44px; flex-grow:1; }
+.polka-app.mobile-pilot .account-card { padding:23px 20px; }
+.polka-app.mobile-pilot .account-access { padding:18px; }
+.polka-app.mobile-pilot .polka-identity { padding:12px 14px; border:1px solid var(--mp-line); border-radius:14px; background:var(--mp-inset); }
+.polka-app.mobile-pilot .polka-identity code { color:var(--mp-muted); font-size:11px; }
+.polka-app.mobile-pilot .polka-identity button { color:var(--mp-accent); min-height:44px; font-size:12px; }
+.polka-app.mobile-pilot .account-profile .avatar { border-radius:50%; }
+.polka-app.mobile-pilot :is(.access-badge,.usage-limit-hint,.account-footnote,.account-mini-stats,.account-bottom,.account-section-title>svg,.order-status,.account-loading,.meter-hint,.usage-meter>div>span,.usage-meter>div>strong>span,.order-description,.order-meta,.account-order p,.account-order small) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .access-badge { background:var(--mp-accent-soft); color:var(--mp-accent); border-color:var(--mp-accent-line); border-radius:9px; }
+.polka-app.mobile-pilot :is(.account-bottom,.account-footnote,.account-section-title,.order-row,.order-history-heading,.account-order,.quiz-meta,.detail-toolbar,.concept-body,.original-preview) { border-color:var(--mp-line); }
+.polka-app.mobile-pilot :is(.usage-heading strong,.account-access h3,.account-section-title h2) { color:var(--mp-ink); }
+.polka-app.mobile-pilot .account-access p { color:var(--mp-muted); }
+.polka-app.mobile-pilot .usage-meter progress { accent-color:var(--mp-accent); background:var(--mp-input); }
+.polka-app.mobile-pilot .usage-meter progress::-webkit-progress-bar { background:var(--mp-input); }
+.polka-app.mobile-pilot .usage-meter progress::-webkit-progress-value { background:var(--mp-accent); }
+.polka-app.mobile-pilot .usage-meter progress::-moz-progress-bar { background:var(--mp-accent); }
+.polka-app.mobile-pilot .account-bottom>div { gap:8px 16px; }
+.polka-app.mobile-pilot .account-bottom a { display:inline-flex; align-items:center; min-height:44px; }
+.polka-app.mobile-pilot .legal-footer { border-color:var(--mp-line); color:var(--mp-muted); margin-top:32px; }
+.polka-app.mobile-pilot .workspace>.legal-footer { display:none; }
+.polka-app.mobile-pilot :is(.legal-footer p,.legal-footer nav,.legal-footer-details) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .legal-footer-brand a { color:var(--mp-ink); }
+.polka-app.mobile-pilot .legal-footer .polka-wordmark { filter:invert(1); mix-blend-mode:multiply; }
+.polka-app.mobile-pilot .legal-footer a { min-height:44px; display:inline-flex; align-items:center; }
+.polka-app.mobile-pilot .legal-footer a:hover { color:var(--mp-accent); }
+/* Upload, account operations and search remain the existing API-backed flows, presented as native sheets. */
+.polka-app.mobile-pilot .dialog,.polka-app.mobile-pilot .v2-command-dialog { position:fixed; inset:auto 0 0; width:100%; max-width:600px; max-height:calc(var(--visual-height,100dvh) - var(--mp-safe-top) - 20px); margin:0 auto; color:var(--mp-ink); background:var(--mp-surface); border:1px solid var(--mp-line); border-bottom:0; border-radius:28px 28px 0 0; box-shadow:0 -12px 70px rgb(0 0 0 / 12%); overscroll-behavior:contain; }
+.polka-app.mobile-pilot .dialog::backdrop,.polka-app.mobile-pilot .v2-command-dialog::backdrop { background:rgb(14 23 38 / 35%); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); }
+.polka-app.mobile-pilot .dialog-inner { padding:23px 21px calc(22px + var(--mp-safe-bottom)); }
+.polka-app.mobile-pilot .dialog-heading { margin-bottom:15px; }
+.polka-app.mobile-pilot .dialog-heading h2 { color:var(--mp-ink); font-size:24px; font-weight:700; }
+.polka-app.mobile-pilot .dialog :is(label,.dialog-intro,.field-hint,.form-footer p,.auth-terms,.auth-switch,.auth-privacy,.auth-terms a,.recovery-result p) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .dialog .field-row { gap:16px; }
+.polka-app.mobile-pilot .dialog :is(input,textarea,select) { font-size:16px; color:var(--mp-ink); background:var(--mp-input); border-color:var(--mp-input-line); border-radius:13px; }
+.polka-app.mobile-pilot .dialog input[type="checkbox"] { width:20px; min-height:20px; height:20px; padding:0; accent-color:var(--mp-accent); flex-shrink:0; }
+.polka-app.mobile-pilot .dialog :is(.dropzone,.auth-privacy,.auto-prepare-option) { background:var(--mp-inset); border-color:var(--mp-line); color:var(--mp-muted); }
+.polka-app.mobile-pilot .dialog .dropzone { border-radius:18px; padding:28px 17px; }
+.polka-app.mobile-pilot .dialog .dropzone :is(strong,span,svg) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .dialog .dropzone strong { color:var(--mp-ink); }
+.polka-app.mobile-pilot .dialog .dropzone:hover { background:var(--mp-inset); border-color:var(--mp-accent); }
+.polka-app.mobile-pilot .dialog .form-footer { background:var(--mp-surface); box-shadow:0 -12px 12px var(--mp-surface); border-color:var(--mp-line); }
+.polka-app.mobile-pilot .dialog .form-footer .button { min-height:50px; border-radius:15px; }
+.polka-app.mobile-pilot .dialog .auto-prepare-option { padding:13px; border:1px solid var(--mp-line); border-radius:14px; }
+.polka-app.mobile-pilot .v2-command-dialog>div:first-child { color:var(--mp-muted); border-color:var(--mp-line); padding:15px 16px; }
+.polka-app.mobile-pilot .v2-command-dialog input { background:transparent; border:0; font-size:16px; color:var(--mp-ink); }
+.polka-app.mobile-pilot .v2-command-dialog>div:first-child>button { min-width:44px; min-height:44px; color:var(--mp-muted); background:var(--mp-inset); }
+.polka-app.mobile-pilot .v2-command-dialog [role="listbox"] { padding:8px; }
+.polka-app.mobile-pilot .v2-command-dialog [role="option"] { min-height:56px; color:var(--mp-ink); border-radius:14px; }
+.polka-app.mobile-pilot .v2-command-dialog [role="option"][aria-selected="true"] { background:var(--mp-accent-soft); }
+.polka-app.mobile-pilot .v2-command-dialog [role="option"] :is(small,svg) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .v2-command-dialog [role="option"] strong { color:var(--mp-ink); }
+.polka-app.mobile-pilot .v2-command-dialog footer { min-height:44px; padding-bottom:calc(12px + var(--mp-safe-bottom)); border-color:var(--mp-line); color:var(--mp-muted); }
+.polka-app.mobile-pilot .v2-command-empty { color:var(--mp-muted); }
+.polka-app.mobile-pilot .toast { background:var(--mp-surface); color:var(--mp-ink); border-color:var(--mp-line); border-radius:17px; box-shadow:0 8px 32px rgb(0 0 0 / 14%); bottom:calc(88px + var(--mp-safe-bottom)); }
+.polka-app.mobile-pilot .toast>button { min-width:44px; min-height:44px; color:var(--mp-muted); margin:-8px -7px -8px 0; }
+.polka-app.mobile-pilot .toast-error { background:#fff0f1; border-color:#f0ccd0; color:#9f2331; }
+/* The assistant fills the app viewport. Content scrolls independently of its controls. */
+.polka-app.mobile-pilot .workspace-chat { height:calc(var(--visual-height,100dvh) - 56px - var(--mp-safe-top)); min-height:260px; padding:0 0 calc(74px + var(--mp-safe-bottom)); max-width:760px; overflow:hidden; }
+.polka-app.mobile-pilot .chat-workbench { height:100%; border:0; border-radius:0; box-shadow:none; background:var(--mp-bg); }
+.polka-app.mobile-pilot .chat-main { background:var(--mp-bg); }
+.polka-app.mobile-pilot .chat-toolbar { padding:8px 16px; min-height:60px; border:0; background:transparent; }
+.polka-app.mobile-pilot .chat-toolbar .icon-button { width:44px; height:44px; }
+.polka-app.mobile-pilot .assistant-info-trigger { min-height:44px; padding:4px 11px 4px 5px; border-color:var(--mp-line); background:var(--mp-surface); color:var(--mp-ink); }
+.polka-app.mobile-pilot .assistant-info-trigger:hover { background:var(--mp-surface); border-color:var(--mp-line); }
+.polka-app.mobile-pilot .assistant-info-trigger strong,.polka-app.mobile-pilot .assistant-info-trigger>svg { color:var(--mp-ink); }
+.polka-app.mobile-pilot .assistant-info-trigger .assistant-mark { background:var(--mp-accent-soft); color:var(--mp-accent); }
+.polka-app.mobile-pilot .assistant-info-popover { background:var(--mp-surface); border-color:var(--mp-line); color:var(--mp-ink); box-shadow:0 18px 54px rgb(0 0 0 / 15%); backdrop-filter:none; max-width:calc(100vw - 28px); }
+.polka-app.mobile-pilot .assistant-info-popover h2 { color:var(--mp-ink); }
+.polka-app.mobile-pilot :is(.assistant-info-popover p,.assistant-info-top,.assistant-info-foot) { color:var(--mp-muted); }
+.polka-app.mobile-pilot .assistant-info-foot { border-color:var(--mp-line); background:transparent; }
+.polka-app.mobile-pilot .assistant-info-top button { width:44px; height:44px; color:var(--mp-muted); }
+.polka-app.mobile-pilot .chat-scope { padding:0 18px 11px; border-bottom:1px solid var(--mp-line); }
+.polka-app.mobile-pilot .chat-scope>label { min-height:44px; max-width:100%; background:var(--mp-surface); border-color:var(--mp-line); color:var(--mp-muted); border-radius:13px; }
+.polka-app.mobile-pilot .chat-scope select { color:var(--mp-ink); background:transparent; border:0; min-height:44px; font-size:16px; padding:5px 20px 5px 0; }
+.polka-app.mobile-pilot .chat-scope>span { display:none; }
+.polka-app.mobile-pilot .chat-messages { padding:20px 18px; }
+.polka-app.mobile-pilot .chat-avatar { background:var(--mp-accent-soft); color:var(--mp-accent); border-color:var(--mp-accent-line); border-radius:50%; }
+.polka-app.mobile-pilot .chat-message-label { color:var(--mp-muted); }
+.polka-app.mobile-pilot .chat-lattice-loader { color:var(--mp-muted); }
+.polka-app.mobile-pilot .chat-lattice-loader .lattice-loader__cell { background:var(--mp-accent); }
+.polka-app.mobile-pilot .chat-prose,.polka-app.mobile-pilot .chat-prose p { color:var(--mp-ink); font-size:16px; line-height:1.7; }
+.polka-app.mobile-pilot .chat-prose h3 { font-size:18px; color:var(--mp-ink); }
+.polka-app.mobile-pilot .chat-message-user .chat-prose { background:var(--mp-accent-soft); color:var(--mp-ink); border-radius:18px 18px 5px 18px; }
+.polka-app.mobile-pilot .chat-prose code { background:var(--mp-input); color:var(--mp-ink); }
+.polka-app.mobile-pilot :is(.inline-citation,.chat-sources>button) { background:var(--mp-surface); color:var(--mp-accent); border-color:var(--mp-line); min-height:44px; }
+.polka-app.mobile-pilot .inline-citation { min-width:44px; }
+.polka-app.mobile-pilot .chat-sources>span { color:var(--mp-muted); }
+.polka-app.mobile-pilot .chat-sources button>span { color:var(--mp-accent); background:var(--mp-accent-soft); }
+.polka-app.mobile-pilot .chat-message-actions { gap:10px; }
+.polka-app.mobile-pilot .chat-message-actions button { min-height:44px; padding:8px 6px; color:var(--mp-muted); font-size:12px; }
+.polka-app.mobile-pilot .chat-composer-area { padding:8px 14px 9px; background:var(--mp-bg); }
+.polka-app.mobile-pilot .polka-prompt-bar { --pb-hover:var(--mp-control-pressed); }
+.polka-app.mobile-pilot .polka-prompt-bar .prompt-bar__field { grid-template-columns:minmax(0,1fr) 44px; min-height:56px; gap:8px; padding:6px 6px 6px 16px; background:var(--mp-surface); border:1px solid var(--mp-line); color:var(--mp-ink); border-radius:29px; box-shadow:0 3px 15px rgb(0 0 0 / 4%); }
+.polka-app.mobile-pilot .polka-prompt-bar .prompt-bar__field:focus-within { border-color:var(--mp-accent); box-shadow:0 0 0 2px var(--mp-accent-soft); }
+.polka-app.mobile-pilot .polka-prompt-bar .prompt-bar__input { background:transparent; border:0; color:var(--mp-ink); min-height:44px; padding:10px 0; font-size:16px; line-height:24px; }
+.polka-app.mobile-pilot .polka-prompt-bar .prompt-bar__input::placeholder { color:var(--mp-muted); }
+.polka-app.mobile-pilot .polka-prompt-bar .prompt-bar__bar { min-height:44px; }
+.polka-app.mobile-pilot .polka-prompt-bar .prompt-bar__send { height:44px; width:44px; border-radius:50%; background:var(--mp-input); color:var(--mp-muted); }
+.polka-app.mobile-pilot .polka-prompt-bar .prompt-bar__send[data-armed] { background:var(--mp-accent); color:#fff; }
+.polka-app.mobile-pilot .chat-privacy { margin-top:7px; font-size:9px; line-height:1.5; color:var(--mp-muted); }
+.polka-app.mobile-pilot .chat-privacy a { display:inline-flex; align-items:center; min-height:44px; text-decoration:underline; text-underline-offset:2px; }
+.polka-app.mobile-pilot :is(.chat-unavailable,.chat-restoring) { background:var(--mp-inset); border-color:var(--mp-line); color:var(--mp-muted); }
+.polka-app.mobile-pilot .chat-error { background:#fff0f1; border-color:#f0ccd0; color:#9f2331; }
+.polka-app.mobile-pilot .chat-error p { color:inherit; }
+.polka-app.mobile-pilot :is(.chat-error,.chat-restoring) button { min-height:44px; }
+.polka-app.mobile-pilot .chat-history { background:var(--mp-surface); border-color:var(--mp-line); }
+.polka-app.mobile-pilot :is(.history-note,.history-loading,.history-open small,.history-empty,.chat-history-heading) { color:var(--mp-muted); }
+.polka-app.mobile-pilot :is(.chat-new,.history-open,.history-open strong) { color:var(--mp-ink); }
+.polka-app.mobile-pilot :is(.chat-new,.history-item.selected,.history-item:hover,.history-confirm) { background:var(--mp-inset); border-color:var(--mp-line); color:var(--mp-ink); }
+.polka-app.mobile-pilot .history-open { min-height:52px; }
+.polka-app.mobile-pilot .history-remove { min-width:44px; min-height:44px; color:var(--mp-muted); }
+.polka-app.mobile-pilot .history-confirm button { min-height:44px; }
+html[data-mobile-pilot="true"][data-chat-keyboard="open"] [data-mobile-pilot-nav] { display:none; }
+html[data-mobile-pilot="true"][data-chat-keyboard="open"] .polka-app.mobile-pilot .workspace-chat { height:calc(var(--visual-height,100dvh) - 56px - var(--mp-safe-top)); min-height:190px; padding-bottom:0; }
+html[data-mobile-pilot="true"][data-chat-keyboard="open"] .polka-app.mobile-pilot .chat-toolbar { padding-top:6px; padding-bottom:6px; min-height:56px; }
+html[data-mobile-pilot="true"][data-chat-keyboard="open"] .polka-app.mobile-pilot .chat-scope { padding-bottom:5px; }
+html[data-mobile-pilot="true"][data-chat-keyboard="open"] .polka-app.mobile-pilot .chat-composer-area { padding-bottom:8px; }
+html[data-mobile-pilot="true"][data-chat-keyboard="open"] .polka-app.mobile-pilot .chat-privacy { display:none; }
+@media(max-width:350px) { .polka-app.mobile-pilot .workspace { padding-left:15px; padding-right:15px; } .polka-app.mobile-pilot .workspace-chat { padding-left:0; padding-right:0; } .polka-app.mobile-pilot .page-heading h1 { font-size:27px; } .polka-app.mobile-pilot .page-heading .button { padding:10px; font-size:12px; } .polka-app.mobile-pilot .chat-messages { padding-inline:14px; } }
+@media(prefers-color-scheme:dark) {
+ html[data-mobile-pilot="true"],html[data-mobile-pilot="true"] body { color-scheme:dark; background:#090a0e; }
+ .polka-app.mobile-pilot { --mp-bg:#090a0e; --mp-surface:#17191f; --mp-inset:#20232b; --mp-ink:#f7f7f9; --mp-muted:#aaafb9; --mp-line:#2b2e37; --mp-accent:#80b5ff; --mp-accent-soft:#18283f; --mp-accent-line:#253f61; --mp-input:#242731; --mp-input-line:#30343e; --mp-solid:#e8edf5; --mp-solid-text:#171b22; --mp-olive:#bad58a; --mp-chrome:rgb(23 25 31 / 94%); --mp-chrome-border:rgb(188 195 210 / 14%); --mp-control-pressed:rgb(199 214 240 / 10%); --mp-handle:#555b68; color-scheme:dark; }
+ .polka-app.mobile-pilot :is(.error-notice,.chat-error,.toast-error) { background:#361d24; border-color:#5c3039; color:#ffb9c2; }
+ .polka-app.mobile-pilot .polka-prompt-bar .prompt-bar__send[data-armed] { color:#111c2d; }
+ .polka-app.mobile-pilot .legal-footer .polka-wordmark { filter:none; mix-blend-mode:screen; }
+ .polka-app.mobile-pilot .icon-button.danger { color:#ffb9c2; }
+}
+@media(prefers-reduced-motion:reduce) { .polka-app.mobile-pilot *, .polka-app.mobile-pilot *::before,.polka-app.mobile-pilot *::after { scroll-behavior:auto; transition:none!important; animation:none!important; } .polka-app.mobile-pilot button:active:not(:disabled) { transform:none; } }
+@media(prefers-reduced-transparency:reduce) { .polka-app.mobile-pilot .dialog::backdrop,.polka-app.mobile-pilot .v2-command-dialog::backdrop { backdrop-filter:none; -webkit-backdrop-filter:none; background:rgb(14 23 38 / 58%); } }
