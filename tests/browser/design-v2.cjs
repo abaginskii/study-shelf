@@ -18,6 +18,19 @@ async function main() {
   const browser = await chromium.launch({ headless: true, channel: 'chrome' });
   const errors = [];
   try {
+    async function navigate(target, name) {
+      const desktop = target.locator('[data-workspace-nav]:visible').getByRole('button', { name, exact: true });
+      if (await desktop.isVisible()) await desktop.click();
+      else {
+        const mobile = target.locator('[data-workspace-mobile-nav]');
+        const button = mobile.getByRole('button', { name, exact: true });
+        if (!await button.isVisible()) await target.locator('[data-workspace-header] details summary').click();
+        await button.click();
+      }
+      const destination = { 'Обзор': 'home', 'Материалы': 'materials', 'Предметы': 'subjects', 'Знания': 'knowledge', 'Практика': 'review', 'polka.ai': 'assistant' }[name];
+      assert(destination, `Known workspace destination: ${name}`);
+      await target.locator(`main[data-page="${destination}"]`).waitFor();
+    }
     async function context(username) {
       const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' });
       await ctx.addInitScript(() => localStorage.setItem('polka.community.telegram.v1', String(Date.now() + 30 * 24 * 60 * 60 * 1000)));
@@ -37,39 +50,40 @@ async function main() {
     await anonymous.page.goto(base);
     await anonymous.page.locator('[data-polka-landing]').waitFor();
     assert.equal(await anonymous.page.locator('.design-version-switch').count(), 0);
-    assert.equal((await (await anonymous.ctx.request.get(`${base}/api/session`)).json()).designPreview, false);
+    assert.equal((await anonymous.ctx.request.get(`${base}/api/admin/overview`)).status(), 401);
     await anonymous.ctx.close();
-    check('anonymous sees the new public landing without owner workspace access');
+    check('anonymous sees the public landing and cannot access owner data');
 
     const student = await context('student');
     const studentSession = await (await student.ctx.request.get(`${base}/api/session`)).json();
-    assert.equal(studentSession.designPreview, false);
-    await student.page.addInitScript(id => localStorage.setItem(`polka.design.v2:${id}`, 'v2'), studentSession.user.id);
+    await student.page.addInitScript(id => localStorage.setItem(`polka.design.v2:${id}`, 'v1'), studentSession.user.id);
     await student.page.goto(base);
-    await student.page.locator('.dashboard').waitFor();
-    assert.equal(await student.page.locator('.v2-header').count(), 0);
+    await student.page.locator('[data-workspace-dashboard]').waitFor();
+    await student.page.reload();
+    await student.page.locator('[data-workspace-dashboard]').waitFor();
+    assert.equal(await student.page.locator('[data-workspace-header]').count(), 1);
     assert.equal(await student.page.locator('.design-version-switch').count(), 0);
+    assert.equal((await student.ctx.request.get(`${base}/api/admin/overview`)).status(), 403, 'General rollout must preserve owner-only administration');
+    for (const [name, id] of [['Материалы', 'materials'], ['Предметы', 'subjects'], ['Знания', 'knowledge'], ['Практика', 'review'], ['polka.ai', 'assistant'], ['Обзор', 'home']]) {
+      await navigate(student.page, name);
+      await student.page.locator(`main[data-page="${id}"]`).waitFor();
+    }
     await student.ctx.close();
-    check('non-owner cannot enable pilot using saved preferences');
+    check('student receives new workspace despite old classic preference; owner administration stays private');
 
     const { ctx, page } = await context('artem');
     const ownerSession = await (await ctx.request.get(`${base}/api/session`)).json();
     assert.equal(ownerSession.user.id, fixture.artemId, 'Server must use the isolated fixture');
-    assert.equal(ownerSession.designPreview, true);
     await page.goto(base);
     await page.locator('.v2-dashboard .v2-material-row').first().waitFor();
     await page.addStyleTag({ content: 'nextjs-portal {display:none}' });
-    await page.locator('.design-version-switch button').first().click();
-    await page.locator('.dashboard').waitFor();
-    await page.reload();
-    await page.locator('.dashboard').waitFor();
-    await page.locator('.design-version-switch button').last().click();
-    await page.locator('.v2-dashboard').waitFor();
+    assert.equal(await page.locator('.design-version-switch').count(), 0);
+    assert.equal((await ctx.request.get(`${base}/api/admin/overview`)).status(), 200);
     await page.reload();
     await page.locator('.v2-dashboard .v2-material-row').first().waitFor();
-    check('owner switches versions and preference survives reload');
+    check('owner receives the same new workspace; reload and authorized administration work');
 
-    const nav = async name => page.locator('.v2-header nav').getByRole('button', { name, exact: true }).click();
+    const nav = async name => navigate(page, name);
     const fits = async label => {
       const size = await page.evaluate(() => ({ width: innerWidth, doc: document.documentElement.scrollWidth, body: document.body.scrollWidth }));
       assert(size.doc <= size.width + 1 && size.body <= size.width + 1, `${label}: horizontal overflow ${JSON.stringify(size)}`);
@@ -125,7 +139,7 @@ async function main() {
     check('text upload, source editing, cancel and confirmed deletion');
 
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.getByRole('button', { name: 'Открыть polka.id' }).click();
+    await page.locator('[data-workspace-header] .v2-profile-trigger').click();
     await page.locator('.polka-identity').waitFor();
     assert((await page.locator('.polka-identity').innerText()).includes(fixture.artemId));
     await page.screenshot({ path: `${screenshots}/account-desktop.png`, fullPage: true });
@@ -138,7 +152,7 @@ async function main() {
       await route.fulfill({ response, json: { ...data, aiAvailable: true } });
     });
     await page.reload();
-    await page.locator('.v2-header').waitFor();
+    await page.locator('[data-workspace-header]').waitFor();
     await nav('polka.ai');
     const input = page.getByRole('textbox', { name: 'Сообщение для polka.ai' });
     await input.waitFor();
@@ -186,26 +200,43 @@ async function main() {
     await page.locator('.detail-heading h1').waitFor();
     check('chat info, loader, failed-send draft, abort, SSE and source citation (AI stubs)');
 
-    for (const width of [1440, 768, 390, 320]) {
+    await page.setViewportSize({ width: 1280, height: 600 });
+    await nav('Обзор');
+    const sidebarPanel = page.locator('[data-workspace-header] aside');
+    const sidebarAccount = sidebarPanel.getByRole('button', { name: 'Открыть polka.id' });
+    await sidebarAccount.scrollIntoViewIfNeeded();
+    const shortBox = await sidebarAccount.boundingBox();
+    assert(shortBox && shortBox.y >= 0 && shortBox.y + shortBox.height <= 601, 'Account remains reachable on a short desktop screen');
+    await sidebarAccount.click();
+    await page.locator('.polka-identity').waitFor();
+    await fits('short desktop account');
+    check('desktop sidebar scrolls and account remains reachable at 1280×600');
+
+    for (const width of [1440, 1280, 1024, 768, 390, 320]) {
       await page.setViewportSize({ width, height: width > 768 ? 1000 : 844 });
+      if (width > 1024) {
+        const sidebar = await page.locator('[data-workspace-nav]:visible').boundingBox();
+        const content = await page.locator('main[data-page]').boundingBox();
+        assert(sidebar && content && sidebar.x + sidebar.width <= content.x + 1, 'Desktop navigation sits beside the workspace');
+      }
       for (const name of ['Обзор', 'Материалы', 'Предметы', 'Знания', 'Практика', 'polka.ai']) {
         await nav(name);
         await page.locator(`main[data-page]`).waitFor();
         await fits(`${width} ${name}`);
       }
-      await page.getByRole('button', { name: 'Открыть polka.id' }).click();
+      await page.locator('[data-workspace-header] .v2-profile-trigger').click();
       await page.locator('.polka-identity').waitFor();
       await fits(`${width} account`);
       await nav('Обзор');
       await page.screenshot({ path: `${screenshots}/overview-${width}.png`, fullPage: true });
-      await page.getByRole('button', { name: 'Открыть поиск и команды' }).click();
+      await page.locator('[data-workspace-header]').getByRole('button', { name: 'Открыть поиск и команды' }).click();
       await search.fill('несуществующий материал');
       await page.locator('.v2-command-empty').waitFor();
       const box = await page.getByRole('dialog', { name: 'Поиск и команды' }).boundingBox();
       assert(box.x >= 0 && box.x + box.width <= width + 1);
       await page.keyboard.press('Escape');
-      await page.getByRole('button', { name: 'Открыть поиск и команды' }).click();
-      await search.fill('новый лендинг');
+      await page.locator('[data-workspace-header]').getByRole('button', { name: 'Открыть поиск и команды' }).click();
+      await search.fill('О polka');
       await page.keyboard.press('Enter');
       await page.locator('[data-polka-landing]').waitFor();
       await fits(`${width} landing`);

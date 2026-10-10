@@ -1,0 +1,133 @@
+/* Shared surfaces for the public polka workspace. Navigation and overview use a CSS module. */
+html[data-workspace="true"] { color-scheme:dark; background:#040506; scroll-padding-top:96px; }
+html[data-workspace="true"] body { background:#040506; }
+.polka-app { --bg:#040506; --surface:#07080a; --ink:#f5f5f5; --muted:#9c9c9d; --border:#2b2c2f; --purple:#e6e6e6; --purple-dark:#fff; --lavender:#111214; --peach:#111214; --mint:#111214; --key-shadow:inset 0 1px 0 rgb(255 255 255 / 5%),inset 0 -1px 0 rgb(0 0 0 / 20%); min-height:100dvh; background:var(--bg); color:var(--ink); font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; font-size:14px; font-feature-settings:"calt","kern","liga","ss03"; }
+.polka-app ::selection { background:#452324; color:#fff; }
+.polka-app :is(h1,h2,h3) { letter-spacing:.004em; font-weight:500; color:#fff; }
+.polka-app p { color:#9c9c9d; }
+.polka-app :is(button,a,input,textarea,select):focus-visible { outline:2px solid #e6e6e6; outline-offset:4px; }
+.polka-app :is(button,a) { transition:background-color .18s,border-color .18s,color .18s,transform .18s; }
+.polka-app button:active:not(:disabled) { transform:translateY(1px); }
+.polka-app :is(input,textarea,select) { background:#111214; border-color:#363739; color:#f5f5f5; border-radius:8px; }
+.polka-app input::placeholder,.polka-app textarea::placeholder { color:#919193; }
+.polka-app option { background:#111214; }
+.polka-app .button { background:#111214; color:#e6e6e6; border:1px solid #363739; border-radius:8px; min-height:42px; }
+.polka-app .button:hover:not(:disabled) { background:#1b1c1e; border-color:#66676a; }
+.polka-app .button.primary,.polka-app .button.dark { background:#e6e6e6; border-color:#e6e6e6; color:#363739; box-shadow:inset 0 1px 0 #fff5; }
+.polka-app .button.primary:hover:not(:disabled) { background:#fff; border-color:#fff; }
+.polka-app .button.destructive { background:#452324; border-color:#774043; color:#ffd8d8; }
+.polka-app .icon-button { color:#9c9c9d; }
+.polka-app .icon-button:hover { background:#1b1c1e; color:#fff; }
+.polka-app .text-button,.polka-app .source-link,.polka-app .back-button { color:#e6e6e6; }
+.polka-app :is(.eyebrow,.panel-label,.small,.muted) { color:#9c9c9d; }
+.polka-app :is(.tag,.tag-green,.pill,.lavender,.peach,.mint,.stat-icon,.avatar,.subject-icon,.empty-icon,.preview-icon) { background:#1b1c1e; color:#c7c7c8; border-color:#363739; }
+.polka-app .app-shell { display:block; background:#040506; min-height:100dvh; }
+.polka-app .workspace { max-width:1200px; padding:40px 32px 32px; margin:auto; width:100%; min-height:calc(100dvh - 76px); }
+.polka-app .page-heading { align-items:center; margin-bottom:32px; }
+.polka-app .page-heading h1,.polka-app .detail-heading h1 { font-size:36px; letter-spacing:.004em; margin-top:8px; }
+.polka-app .page-heading p { font-size:14px; margin-top:12px; }
+.polka-app :is(.panel,.material-card,.subject-card,.account-card,.review-row,.quiz-card) { background:#07080a; border:1px solid #363739; border-radius:16px; box-shadow:var(--key-shadow); color:#e6e6e6; }
+.polka-app .material-card { padding:24px; min-height:228px; }
+.polka-app .material-card:hover,.polka-app .subject-card:hover { border-color:#68696c; background:#111214; box-shadow:var(--key-shadow); transform:translateY(-2px); }
+.polka-app .material-card strong { color:#fff; font-size:17px; }
+.polka-app :is(.card-subject,.card-excerpt,.card-footer,.status,.detail-heading p,.topic-card p,.topic-evidence span) { color:#9c9c9d; }
+.polka-app :is(.status-ready,.status-ready>span,.nav-count,.count-badge,.source-count) { color:#e6e6e6; background:#1b1c1e; }
+.polka-app .status>span { background:#9c9c9d; }
+.polka-app .search-field { background:#111214; border-color:#363739; color:#9c9c9d; }
+.polka-app .search-field input { background:transparent; }
+.polka-app .filters select { background:#111214; border-color:#363739; }
+.polka-app :is(.results-label,.card-filetype,.empty p,.subject-card p,.subject-arrow,.subject-icon) { color:#9c9c9d; }
+.polka-app .subject-card { min-height:190px; }
+.polka-app :is(.segmented,.chat-scope label,.account-access,.usage-meter,.account-mini-stats,.topic-evidence,.answer-box,.answer-assessment,.concept-item,.original-metadata,.processing-notice) { background:#111214; border-color:#363739; color:#c7c7c8; }
+.polka-app .segmented { padding:4px; border:1px solid #2b2c2f; border-radius:8px; }
+.polka-app .segmented button { color:#9c9c9d; }
+.polka-app .segmented button.selected { background:#2f3031; color:#fff; box-shadow:inset 0 1px 0 #ffffff12; }
+.polka-app :is(.notice,.chat-error,.chat-unavailable,.chat-restoring) { background:#111214; border:1px solid #363739; color:#c7c7c8; border-radius:8px; }
+.polka-app .error-notice,.polka-app .chat-error { background:#251819; border-color:#5c3536; color:#ffd5d5; }
+.polka-app :is(.concept-title,.concept-body,.concept-body p,.summary-panel .prose,.source-textarea,.prose,.chat-prose,.question-list) { color:#c7c7c8; }
+.polka-app :is(blockquote,.topic-evidence,.concept-body blockquote,.answer-box blockquote,.answer-assessment blockquote) { background:#111214; border-color:#454647; color:#c7c7c8; }
+.polka-app .concept-item { border:1px solid #2b2c2f; border-radius:8px; margin-top:8px; }
+.polka-app :is(.concept-title:hover,.source-link:hover) { background:#1b1c1e; }
+.polka-app :is(.progress-track,.usage-track) { background:#2b2c2f; }
+.polka-app :is(.progress-track>span,.usage-track>span) { background:#e6e6e6; }
+.polka-app :is(.access-badge,.usage-limit-hint,.account-footnote,.account-mini-stats,.account-bottom,.account-section-title>svg,.order-status,.account-loading) { color:#9c9c9d; }
+.polka-app .access-badge { background:#1b1c1e; border:1px solid #363739; }
+.polka-app :is(.account-access,.account-mini-stats,.account-bottom,.account-footnote,.quiz-meta,.detail-toolbar,.concept-body) { border-color:#2b2c2f; }
+.polka-app .usage-heading strong,.polka-app .account-access h3 { color:#e6e6e6; }
+.polka-app .account-access { padding:24px; border-radius:10px; }
+.polka-app .polka-identity { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:12px 16px; border:1px solid #363739; border-radius:8px; margin:20px 0; background:#111214; }
+.polka-app .polka-identity code { color:#9c9c9d; font:11px ui-monospace,monospace; overflow-wrap:anywhere; }
+.polka-app .polka-identity button { display:flex; align-items:center; gap:6px; min-height:30px; font-size:11px; }
+.polka-app .legal-footer { border-color:#2b2c2f; background:transparent; color:#9c9c9d; margin-top:48px; }
+.polka-app :is(.legal-footer p,.legal-footer nav,.legal-footer-details) { color:#9c9c9d; }
+.polka-app .legal-footer-brand a { color:#e6e6e6; }
+.polka-app .legal-footer-brand a span { color:#ff6363; }
+.polka-app .legal-footer a:hover { color:#fff; }
+/* Chat as a focused workspace, with no outer page scroll. */
+.polka-app .workspace-chat { padding:24px 32px; height:calc(100dvh - 76px); min-height:420px; }
+.polka-app .chat-workbench { height:100%; min-height:0; background:#07080a; border:1px solid #363739; border-radius:16px; box-shadow:var(--key-shadow); }
+.polka-app .chat-main { background:#07080a; }
+.polka-app .chat-history { background:#040506; border-color:#2b2c2f; }
+.polka-app :is(.chat-toolbar,.chat-scope) { background:transparent; border-color:#242529; }
+.polka-app :is(.chat-new,.history-item.selected,.history-item:hover,.history-confirm,.assistant-info-popover) { background:#111214; border-color:#363739; color:#e6e6e6; }
+.polka-app :is(.chat-new,.history-open,.history-open strong,.chat-message-label,.assistant-info-trigger strong) { color:#e6e6e6; }
+.polka-app :is(.history-note,.history-loading,.history-open small,.chat-scope>span,.chat-privacy,.history-empty,.chat-history-heading,.assistant-info-foot) { color:#9c9c9d; }
+.polka-app :is(.chat-avatar,.assistant-mark,.inline-citation,.chat-sources>button,.chat-message-user .chat-prose) { background:#1b1c1e; color:#e6e6e6; border-color:#363739; }
+.polka-app .assistant-mark { color:#ff6363; background:#45232460; }
+.polka-app .chat-prose code { background:#1b1c1e; color:#e6e6e6; }
+.polka-app .assistant-info-popover { box-shadow:0 20px 80px #0009; }
+.polka-app .assistant-info-popover p,.polka-app .assistant-info-top { color:#9c9c9d; }
+.polka-app .chat-composer-area { background:#07080a; }
+.polka-app .polka-prompt-bar .prompt-bar__field { background:#111214; border-color:#363739; color:#e6e6e6; box-shadow:inset 0 1px 0 #ffffff0a; border-radius:12px; padding:8px 10px 8px 16px; }
+.polka-app .polka-prompt-bar .prompt-bar__field:focus-within { border-color:#9c9c9d; box-shadow:0 0 0 3px #ffffff08; }
+.polka-app .polka-prompt-bar .prompt-bar__send { border-radius:8px; background:#2f3031; color:#9c9c9d; }
+.polka-app .polka-prompt-bar .prompt-bar__send[data-armed] { background:#e6e6e6; color:#111214; }
+/* Native dialogs provide keyboard trapping and a consistent mobile sheet. */
+.polka-app .dialog { color:#e6e6e6; background:#07080a; border:1px solid #454647; border-radius:16px; box-shadow:0 24px 100px #000b; }
+.polka-app .dialog::backdrop { background:#000b; backdrop-filter:blur(8px); }
+.polka-app .dialog-intro,.polka-app .field-hint,.polka-app .form-footer p { color:#9c9c9d; }
+.polka-app :is(.dropzone,.auth-privacy,.auto-prepare-option) { background:#111214; border-color:#363739; color:#c7c7c8; }
+.polka-app .dropzone:hover { border-color:#9c9c9d; background:#1b1c1e; }
+.polka-app .dropzone strong { color:#e6e6e6; }
+.polka-app .toast { background:#1b1c1e; color:#e6e6e6; border:1px solid #454647; box-shadow:0 12px 30px #0006; }
+.polka-app .toast-error { background:#452324; color:#ffd8d8; }
+.polka-app .v2-command-dialog { margin:12vh auto auto; padding:0; width:min(600px,calc(100% - 32px)); max-height:76dvh; color:#e6e6e6; background:#07080a; border:1px solid #454647; border-radius:16px; box-shadow:0 32px 120px #000c,inset 0 1px 0 #ffffff12; }
+
+.polka-app .app-content { margin-left:232px; }
+.polka-app .mobile-nav { display:none; }
+@media(max-width:1024px) {
+ .polka-app .app-content { margin-left:0; }
+ .polka-app .workspace { min-height:calc(100dvh - 72px); padding:32px 24px 112px; }
+ .polka-app .mobile-nav { position:fixed; z-index:25; display:flex; align-items:center; justify-content:space-around; gap:2px; bottom:12px; left:12px; right:12px; width:min(600px,calc(100% - 24px)); margin:auto; height:60px; min-height:0; padding:5px 6px; border:1px solid #363739; border-radius:14px; background:#111214dd; backdrop-filter:blur(32px); -webkit-backdrop-filter:blur(32px); box-shadow:inset 0 1px 0 #ffffff12; }
+ .polka-app .mobile-nav>button { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#9c9c9d; border-radius:8px; min-height:46px; padding:4px 0; font-size:9px; gap:4px; }
+ .polka-app .mobile-nav>button.active { background:#2f3031; color:#fff; }
+ .polka-app .mobile-nav>button:before { display:none; }
+ .polka-app .workspace-chat { height:calc(100dvh - 72px); padding:16px 12px 88px; min-height:300px; }
+ html[data-workspace="true"][data-chat-keyboard="open"] .mobile-nav { display:none; }
+ html[data-workspace="true"][data-chat-keyboard="open"] .workspace-chat { height:calc(var(--visual-height,100dvh) - 72px); padding-bottom:8px; }
+}
+@media(max-width:760px) { .polka-app .page-heading { gap:16px; align-items:start; margin-bottom:24px; } .polka-app .page-heading h1,.polka-app .detail-heading h1 { font-size:30px; } .polka-app .page-heading .button { font-size:12px; padding:8px 10px; } }
+@media(max-width:760px) { .polka-app .chat-workbench { border-radius:12px; } .polka-app .chat-toolbar { padding:12px 14px; min-height:56px; } .polka-app .chat-scope { padding:10px 14px; } .polka-app .chat-messages { padding:20px 14px; } .polka-app .chat-composer-area { padding:0 10px 12px; } .polka-app .chat-privacy { font-size:9px; line-height:1.5; margin-top:8px; } .polka-app .chat-prose { font-size:14px; line-height:1.85; } }
+@media(max-width:760px) { .polka-app .account-grid { gap:16px; } .polka-app .account-card { padding:24px 20px; } .polka-app .account-access { padding:16px; } .polka-app .profile-section .account-profile { flex-wrap:wrap; } .polka-app .material-grid { grid-template-columns:1fr; } .polka-app .detail-aside { display:flex; flex-direction:column; } }
+@media(max-width:760px) { .polka-app .dialog { width:calc(100% - 24px); max-height:calc(100dvh - 32px); border-radius:16px; } .polka-app .dialog-inner { padding:24px 20px; } .polka-app .dialog :is(input,textarea,select) { font-size:16px; } .polka-app .form-footer { flex-wrap:wrap; gap:16px; } .polka-app .form-footer .button { width:100%; } .polka-app .toast { bottom:86px; max-width:calc(100% - 24px); } }
+@supports (padding: env(safe-area-inset-bottom)) { @media(max-width:1024px) { .polka-app .mobile-nav { bottom:max(12px,env(safe-area-inset-bottom)); } .polka-app .workspace { padding-bottom:calc(100px + env(safe-area-inset-bottom)); } .polka-app .workspace-chat { padding-bottom:calc(88px + env(safe-area-inset-bottom)); } } }
+
+@media(prefers-reduced-motion:reduce) { .polka-app *, .polka-app *::before,.polka-app *::after { scroll-behavior:auto; transition:none!important; animation-duration:.01ms!important; animation-iteration-count:1!important; } }
+.polka-app .usage-meter progress { background:#2b2c2f; accent-color:#e6e6e6; }
+.polka-app .usage-meter progress::-webkit-progress-bar { background:#2b2c2f; }
+.polka-app .usage-meter progress::-webkit-progress-value { background:#e6e6e6; }
+.polka-app .usage-meter progress::-moz-progress-bar { background:#e6e6e6; }
+.polka-app :is(.meter-hint,.usage-meter>div>span,.usage-meter>div>strong>span,.order-description,.order-meta) { color:#9c9c9d; }
+.polka-app :is(.order-row,.order-history-heading,.account-section-title,.original-preview) { border-color:#2b2c2f; }
+.polka-app .mobile-nav>button.active svg { color:#e6e6e6; }
+.polka-app .assistant-info-trigger { background:#111214; border-color:#363739; color:#e6e6e6; }
+.polka-app .assistant-info-trigger:hover { background:#1b1c1e; border-color:#68696c; }
+.polka-app .assistant-info-trigger strong,.polka-app .assistant-info-trigger>svg { color:#e6e6e6; }
+.polka-app .assistant-info-trigger .assistant-mark { background:#1b1c1e; color:#e6e6e6; }
+.polka-app .assistant-info-popover,.polka-app .assistant-info-foot { border-color:#363739; background:#111214; color:#9c9c9d; }
+.polka-app .chat-sources>span { color:#9c9c9d; }
+.polka-app .chat-sources button>span { background:#2f3031; color:#e6e6e6; }
+.polka-app .polka-prompt-bar .prompt-bar__field { display:grid; grid-template-columns:minmax(0,1fr) 36px; align-items:end; gap:12px; padding:7px 8px 7px 16px; border-radius:25px; }
+.polka-app .polka-prompt-bar .prompt-bar__input { min-height:36px; padding:7px 0; border:0; border-radius:0; background:transparent; }
+.polka-app .polka-prompt-bar .prompt-bar__bar { min-height:36px; align-items:center; gap:0; }
+.polka-app .polka-prompt-bar .prompt-bar__spacer { display:none; }

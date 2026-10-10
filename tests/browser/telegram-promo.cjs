@@ -28,7 +28,7 @@ async function verifyTelegramPromo(browser, base, screenshots) {
   }
   async function load(page, path = '/') {
     await page.goto(new URL(path, base).href);
-    await page.locator(path === '/' ? '[data-polka-landing], .dashboard, .v2-dashboard' : 'main').first().waitFor();
+    await page.locator(path === '/' ? '[data-polka-landing], [data-workspace-dashboard]' : 'main').first().waitFor();
   }
   async function show(page) {
     await page.clock.fastForward(12_000);
@@ -57,7 +57,7 @@ async function verifyTelegramPromo(browser, base, screenshots) {
       const now = await page.evaluate(() => Date.now());
       assert(expiry - now >= 29 * 24 * 60 * 60 * 1000 && expiry - now <= 30 * 24 * 60 * 60 * 1000);
       await page.reload();
-      await page.locator('[data-polka-landing], .dashboard, .v2-dashboard').first().waitFor();
+      await page.locator('[data-polka-landing], [data-workspace-dashboard]').first().waitFor();
       await page.clock.fastForward(60_000);
       assert.equal(await page.locator(selector).count(), 0, 'Dismissal survives refresh');
       check(`${username || 'visitor'}: delay, focus, secure link, Escape and persisted dismissal`);

@@ -12,6 +12,7 @@ test('PWA caches public offline assets only and ships valid install icons',async
  const writes:unknown[]=[];
  const matches:string[]=[];
  const fetched:unknown[]=[];
+ const deletedCaches:string[]=[];
  const offline=new Response('Public offline page',{headers:{'Content-Type':'text/html'}});
  let connected=true;
  let hasOfflinePage=true;
@@ -24,8 +25,8 @@ test('PWA caches public offline assets only and ships valid install icons',async
  };
  const caches={
   open:async()=>cache,
-  keys:async()=>[],
-  delete:async()=>true,
+  keys:async()=>['polka-offline-v1','polka-offline-v2','polka-offline-v3','other-application-cache'],
+  delete:async(key:string)=>{deletedCaches.push(key);return true},
   match:async(input:string|Request)=>{
    const path=new URL(typeof input==='string'?input:input.url,origin).pathname;
    matches.push(path);
@@ -43,6 +44,7 @@ test('PWA caches public offline assets only and ships valid install icons',async
  listeners.get('install')!({waitUntil:(promise:Promise<unknown>)=>installation.push(promise)});
  await Promise.all(installation);
  assert.ok(precached.some(request=>new URL(request.url).pathname==='/offline.html'));
+ assert.ok(precached.some(request=>new URL(request.url).pathname==='/icons/polka-192.png'));
  for(const request of precached){
   const path=new URL(request.url).pathname;
   assert.ok(path==='/offline.html'||path.startsWith('/icons/'),`Unexpected precached path: ${path}`);
@@ -50,6 +52,10 @@ test('PWA caches public offline assets only and ships valid install icons',async
   assert.ok(!path.startsWith('/api'));
   assert.equal(request.credentials,'omit');
  }
+ const activation:Promise<unknown>[]=[];
+ listeners.get('activate')!({waitUntil:(promise:Promise<unknown>)=>activation.push(promise)});
+ await Promise.all(activation);
+ assert.deepEqual(deletedCaches,['polka-offline-v1','polka-offline-v2']);
 
  function dispatch(path:string,method='GET',mode='navigate'){
   const responses:Promise<Response>[]=[];
@@ -62,7 +68,7 @@ test('PWA caches public offline assets only and ships valid install icons',async
  assert.equal(dispatch('/','POST').length,0);
  assert.equal(dispatch('/api/chat','POST').length,0);
  assert.equal(dispatch('https://other.test/private').length,0);
- assert.equal(dispatch('/icons/icon-192.png?account=private','GET','cors').length,0);
+ assert.equal(dispatch('/icons/polka-192.png?account=private','GET','cors').length,0);
  assert.equal(fetched.length,0);
  assert.equal(matches.length,0);
 

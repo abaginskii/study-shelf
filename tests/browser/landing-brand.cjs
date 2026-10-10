@@ -49,6 +49,36 @@ async function verifyLandingBrand(browser, base, screenshots) {
     assert.match(await channel.getAttribute('rel'), /noopener noreferrer/);
     check('new public brand artwork, valid section anchors, real tariff and Telegram links');
 
+    const manifestPath = await page.locator('head link[rel="manifest"]').getAttribute('href');
+    assert.equal(manifestPath, '/manifest.webmanifest', 'Browser receives the install manifest link');
+    const manifestResponse = await ctx.request.get(new URL(manifestPath, base).href);
+    assert.equal(manifestResponse.status(), 200);
+    assert.match(manifestResponse.headers()['content-type'], /application\/(?:manifest\+)?json/);
+    const manifest = await manifestResponse.json();
+    const browserIcons = await page.locator('head link[rel~="icon"]').evaluateAll(elements => elements.map(element => element.getAttribute('href')));
+    const appleIcons = await page.locator('head link[rel="apple-touch-icon"]').evaluateAll(elements => elements.map(element => element.getAttribute('href')));
+    assert(browserIcons.includes('/brand/favicon.svg'), 'Browser links the supplied brand favicon');
+    assert(browserIcons.includes('/icons/polka-favicon-32.png'), 'Browser links the PNG fallback');
+    assert(appleIcons.includes('/icons/polka-apple-180.png'), 'iPhone receives the dedicated install icon');
+    assert.deepEqual(new Set(manifest.icons.map(icon => icon.src)), new Set(['/icons/polka-192.png', '/icons/polka-512.png', '/icons/polka-maskable-512.png']));
+    const iconPaths = [...new Set([...browserIcons, ...appleIcons, ...manifest.icons.map(icon => icon.src)])];
+    for (const iconPath of iconPaths) {
+      const response = await ctx.request.get(new URL(iconPath, base).href);
+      assert.equal(response.status(), 200, `Linked icon is served: ${iconPath}`);
+      if (iconPath.endsWith('.svg')) {
+        assert.match(response.headers()['content-type'], /image\/svg\+xml/);
+        assert.match(await response.text(), /<svg\b/);
+      } else if (iconPath.endsWith('.png')) {
+        assert.match(response.headers()['content-type'], /image\/png/);
+        const png = await response.body();
+        assert(png.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])), `Actual served icon is a PNG: ${iconPath}`);
+        assert.equal(png.subarray(12, 16).toString(), 'IHDR');
+        assert(png.readUInt32BE(16) > 0 && png.readUInt32BE(20) > 0, 'Delivered PNG has valid dimensions');
+      }
+    }
+    // Exact manifest dimensions and maskable metadata are covered in pwa.test.ts.
+    check('browser and iPhone metadata link working brand assets; manifest icons load as valid images');
+
     await site.getByRole('button', { name: 'Создать свою полку', exact: true }).click();
     const registration = page.getByRole('dialog', { name: 'Ваша полка начинается здесь', exact: true });
     await registration.waitFor();
@@ -144,7 +174,7 @@ async function verifyLandingBrand(browser, base, screenshots) {
     await login.getByRole('button', { name: 'Войти', exact: true }).click();
     const authResponse = await authResponsePromise;
     assert.equal(authResponse.status(), 200, 'Synthetic account login must succeed on the real backend');
-    await page.locator('.dashboard').waitFor();
+    await page.locator('[data-workspace-dashboard]').waitFor();
     assert.equal(await site.count(), 0, 'Real login opens account workspace');
     // Production uses Secure cookies. Normalize only this synthetic loopback
     // context so Playwright's HTTP request client can share the browser session.
@@ -152,7 +182,7 @@ async function verifyLandingBrand(browser, base, screenshots) {
     assert(cookies.some(cookie => cookie.name === 'polka_session'), 'Browser must receive the actual session cookie');
     await ctx.addCookies(cookies.map(cookie => ({ ...cookie, secure: false })));
     await page.reload();
-    await page.locator('.dashboard').waitFor();
+    await page.locator('[data-workspace-dashboard]').waitFor();
     const sessionResponse = await ctx.request.get(`${base}/api/session`);
     const session = await sessionResponse.json();
     assert.equal(session.user.username, 'student');
