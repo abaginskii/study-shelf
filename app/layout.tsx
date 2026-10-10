@@ -3,6 +3,7 @@ import "./globals.css";
 import "./legal.css";
 import "./workspace.css";
 import "./brand.css";
+import "./mobile-pilot.css";
 import {PWAProvider} from '@/components/pwa/provider';
 import {TelegramPromo} from '@/components/community/telegram-promo';
 
