@@ -1,5 +1,5 @@
 /* Cache public offline assets only. Account data and API responses never enter Cache Storage. */
-const CACHE='polka-offline-v1';
+const CACHE='polka-offline-v2';
 const ASSETS=['/offline.html','/icons/icon-192.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>Promise.all(ASSETS.map(path=>cache.add(new Request(path,{credentials:'omit',cache:'reload'}))))).then(()=>self.skipWaiting()));
@@ -13,7 +13,7 @@ self.addEventListener('fetch',event=>{
  if(request.mode==='navigate'){
   event.respondWith(fetch(request).catch(async()=>{
    const fallback=await caches.match('/offline.html',{cacheName:CACHE});
-   return fallback||new Response('Нет соединения. Откройте Полку, когда появится интернет.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
+   return fallback||new Response('Нет соединения. Откройте polka, когда появится интернет.',{status:503,headers:{'Content-Type':'text/plain; charset=utf-8'}});
   }));
  }else if(ASSETS.includes(url.pathname)&&!url.search){
   event.respondWith(caches.match(request,{cacheName:CACHE}).then(cached=>cached||fetch(request)));
