@@ -1,0 +1,134 @@
+.card {
+  position: fixed;
+  z-index: 35;
+  right: 24px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  width: min(344px, calc(100vw - 32px));
+  padding: 24px;
+  overflow: hidden;
+  color: #f4f4f5;
+  background: linear-gradient(145deg, #1b1d20f5, #0d0f12fa);
+  border: 1px solid #ffffff1a;
+  border-radius: 22px;
+  box-shadow: inset 0 1px 0 #ffffff0d, 0 16px 48px #0000002e;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  font-family: inherit;
+  text-align: left;
+  animation: enter 320ms cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: -75px;
+  right: -45px;
+  width: 170px;
+  height: 170px;
+  background: radial-gradient(circle, #2c9cdb1c, transparent 68%);
+  pointer-events: none;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 21px;
+  padding-right: 32px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -.2px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  color: #ebf8ff;
+  background: #248bc0;
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 #ffffff30;
+}
+
+.icon svg { width: 20px; height: 20px; }
+.channel { margin-left: 4px; color: #a4a8af; font-size: 12px; font-weight: 400; letter-spacing: 0; }
+
+.close {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  color: #a4a8af;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.card h2 { margin: 0 0 9px; color: #f4f4f5; font-size: 20px; font-weight: 500; letter-spacing: -.65px; line-height: 1.2; }
+.card p { margin: 0 0 20px; color: #a4a8af; font-size: 13px; line-height: 1.65; }
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 44px;
+  padding: 0 14px;
+  color: #f4f4f5;
+  background: #ffffff0c;
+  border: 1px solid #ffffff1a;
+  border-radius: 11px;
+  box-shadow: inset 0 1px 0 #ffffff09;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.handle { margin-left: 14px; color: #a4a8af; font-family: ui-monospace, monospace; font-size: 11px; }
+.close:focus-visible, .link:focus-visible { outline: 2px solid #73cfff; outline-offset: 3px; }
+
+@media (hover: hover) {
+  .close:hover { color: #fff; background: #ffffff0a; }
+  .link:hover { color: #fff; background: #ffffff14; border-color: #ffffff2b; }
+}
+
+/* Quietly step aside as soon as a learning or authentication flow opens. */
+:global(body:has(dialog[open], .workspace-chat, .quiz-card)) .card,
+:global(body:has(input:focus, textarea:focus, select:focus, [contenteditable="true"]:focus)) .card {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .card { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); padding: 22px; border-radius: 19px; }
+  :global(body:has(.mobile-nav)) .card { bottom: calc(var(--mobile-bar, 68px) + 16px + env(safe-area-inset-bottom, 0px)); }
+  .card h2 { font-size: 19px; }
+  .identity { margin-bottom: 17px; }
+}
+
+@media (max-width: 360px) {
+  .card { padding: 20px; }
+  .card h2 { font-size: 18px; }
+  .handle { margin-left: 8px; font-size: 10px; }
+  .link { gap: 12px; padding: 0 12px; font-size: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card { animation: none; }
+  .close, .link { transition: none; }
+}
+
+@keyframes enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}

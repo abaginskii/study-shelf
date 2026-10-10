@@ -3,7 +3,7 @@ import { Mail } from 'lucide-react';
 import { LegalDocument, Requisites } from '@/components/legal/document';
 import { legalDetails } from '@/components/legal/details';
 
-export const metadata:Metadata={title:'Поддержка — Полка',description:'Помощь с аккаунтом, материалами и подпиской Полки. Контакт службы заботы.'};
+export const metadata:Metadata={title:'Поддержка — polka',description:'Помощь с аккаунтом, материалами и подпиской Полки. Контакт службы заботы.'};
 export default function ContactPage(){
  return <LegalDocument title="Служба заботы" intro="Поможем с аккаунтом, загрузкой материалов и вопросами о Полке.">
   <section className="legal-notice"><h2><Mail size={21}/>Написать нам</h2><p><a href={`mailto:${legalDetails.email}`}>{legalDetails.email}</a></p><p>Укажите логин, что вы пытались сделать и текст ошибки. Можно приложить скриншот без личных данных и содержимого документов. Пароль и код восстановления нам не нужны.</p><a className="button primary" href={`mailto:${legalDetails.email}?subject=${encodeURIComponent('Вопрос о Полке')}`}>Открыть письмо</a></section>

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowRight, BookOpen, Command, FileText, FolderOpen, GraduationCap, LayoutGrid, Library, MessageCircle, Plus, Search, Sparkles, UserRound, X } from "lucide-react";
+import { ArrowRight, BookOpen, Command, FileText, FolderOpen, GraduationCap, LayoutGrid, Library, MessageCircle, Plus, Search, Sparkles, UserRound, X } from "lucide-react";
 import type { MaterialCard, Topic } from "@/lib/types";
+import { BrandWordmark } from "@/components/brand/wordmark";
+import { PolkaLanding } from "@/components/marketing/polka-landing";
 
 export type WorkspacePage = "home" | "materials" | "subjects" | "knowledge" | "review" | "assistant" | "account";
 const sections = [
@@ -16,16 +18,16 @@ const sections = [
 
 export function VersionSwitch({ version, change }: { version: "v1" | "v2"; change: (version: "v1" | "v2") => void }) {
   return <div className="design-version-switch" role="group" aria-label="Версия интерфейса">
-    <button type="button" aria-pressed={version === "v1"} onClick={() => change("v1")}><span className="version-long">Классический</span><span className="version-short">1.0</span></button>
-    <button type="button" aria-pressed={version === "v2"} onClick={() => change("v2")}>2.0 <span className="version-beta">beta</span></button>
+    <button type="button" aria-pressed={version === "v1"} onClick={() => change("v1")}>Классика</button>
+    <button type="button" aria-pressed={version === "v2"} onClick={() => change("v2")}>Новый</button>
   </div>;
 }
 
 export function WorkspaceHeader({ page, username, navigate, search, changeVersion, previewSite }: { page: WorkspacePage; username: string; navigate: (page: WorkspacePage) => void; search: () => void; changeVersion: (version: "v1" | "v2") => void; previewSite: () => void }) {
   return <header className="v2-header"><div className="v2-header-main">
-    <button className="v2-wordmark" onClick={() => navigate("home")} aria-label="Полка — обзор"><span className="v2-logo-mark" aria-hidden="true"><i /><i /><i /></span>полка<span className="v2-wordmark-version">/ 2.0</span></button>
+    <button className="v2-wordmark" onClick={() => navigate("home")} aria-label="polka — обзор"><BrandWordmark tone="dark" /></button>
     <div className="v2-header-actions"><button className="v2-search-trigger" onClick={search} aria-label="Открыть поиск и команды"><Search size={16} /><span>Поиск</span><kbd>⌘ K</kbd></button><VersionSwitch version="v2" change={changeVersion} /><button className="v2-profile-trigger" onClick={() => navigate("account")} aria-label="Открыть polka.id"><span>{username.slice(0, 1).toUpperCase()}</span><span className="v2-profile-label">polka.id</span></button></div>
-  </div><div className="v2-header-bottom"><nav aria-label="Основная навигация 2.0">{sections.map(item => <button key={item.id} aria-current={page === item.id ? "page" : undefined} onClick={() => navigate(item.id)}><item.icon size={16} />{item.label}{item.id === "assistant" ? <span className="v2-ai-dot" /> : null}</button>)}</nav><button className="v2-site-link" onClick={previewSite}>О Полке <ArrowRight size={14} /></button></div></header>;
+  </div><div className="v2-header-bottom"><nav aria-label="Основная навигация">{sections.map(item => <button key={item.id} aria-current={page === item.id ? "page" : undefined} onClick={() => navigate(item.id)}><item.icon size={16} />{item.label}{item.id === "assistant" ? <span className="v2-ai-dot" /> : null}</button>)}</nav><button className="v2-site-link" onClick={previewSite}>О polka <ArrowRight size={14} /></button></div></header>;
 }
 
 const dateLabel = (value: string) => new Intl.DateTimeFormat("ru", { day: "numeric", month: "short" }).format(new Date(value));
@@ -50,7 +52,7 @@ export function WorkspaceDashboard({ username, materials, topics, reviews, loadi
 }
 
 export function DesignLanding({ back, add }: { back: () => void; add: () => void }) {
-  return <div className="v2-landing"><section className="v2-marketing-hero"><span className="v2-eyebrow">ЛИЧНАЯ БИБЛИОТЕКА С ИСКУССТВЕННЫМ ИНТЕЛЛЕКТОМ</span><h1>Оставьте знания.<br /><span>Отпустите рутину.</span></h1><p>Превращайте лекции и заметки в понимание.<br />Сохраняйте источники. Связывайте идеи. Проверяйте себя.</p><div className="v2-hero-actions"><button className="button primary" onClick={add}><Plus size={17} />Добавить материал</button><button className="button" onClick={back}>В мою библиотеку <ArrowRight size={16} /></button></div><div className="v2-marketing-art" aria-hidden="true"><i /><i /><i /><div className="v2-marketing-command"><Sparkles size={18} /><span>Один вопрос. Новое понимание.</span><kbd>↵</kbd></div></div><a href="#v2-how" className="v2-scroll-hint">Посмотреть, как устроено <ArrowDown size={15} /></a></section><section id="v2-how" className="v2-marketing-section"><span className="v2-eyebrow">СОХРАНИТЬ / ПОНЯТЬ / ВСПОМНИТЬ</span><h2>Ваш путь от материала<br />к собственным знаниям.</h2><div className="v2-feature-grid">{[{icon:Library,title:"Соберите на полке",body:"PDF, фото, аудио и тексты в личной библиотеке. Оригинал остаётся доступен рядом с конспектом."},{icon:Sparkles,title:"Разберитесь с polka.ai",body:"Краткое содержание, понятия и разговор по лекции. Проверяйте выводы помощника по своему источнику."},{icon:GraduationCap,title:"Проверьте понимание",body:"Отвечайте своими словами. Получайте разбор и фрагмент лекции, на который опирается ответ."}].map((item,index)=><article className="v2-key-card" key={item.title}><span className="v2-feature-number">0{index+1}</span><item.icon size={25} strokeWidth={1.4}/><h3>{item.title}</h3><p>{item.body}</p></article>)}</div></section><section className="v2-marketing-final"><BookOpen size={30} strokeWidth={1.2}/><h2>Первый материал.<br />Первое открытие.</h2><p>Учитесь на компьютере, в браузере телефона или в установленной Полке.</p><button className="button primary" onClick={back}>Открыть свою полку <ArrowRight size={16}/></button></section></div>;
+  return <PolkaLanding preview back={back} start={add} />;
 }
 
 export function CommandPalette({ materials, topics, navigate, open, add, close, previewSite }: { materials: MaterialCard[]; topics: Topic[]; navigate: (page: WorkspacePage) => void; open: (id: string) => void; add: () => void; close: () => void; previewSite: () => void }) {
@@ -60,7 +62,7 @@ export function CommandPalette({ materials, topics, navigate, open, add, close, 
   const [active, setActive] = useState(0);
   useEffect(() => { const node = ref.current; node?.showModal(); input.current?.focus(); return () => node?.close(); }, []);
   const q = query.trim().toLocaleLowerCase("ru");
-  const commands = [{ title: "Добавить материал", label: "Действие", icon: Plus, run: add }, ...sections.map(item => ({ title: item.label, label: "Раздел", icon: item.icon, run: () => navigate(item.id) })), { title: "polka.id · Аккаунт", label: "Раздел", icon: UserRound, run: () => navigate("account") }, { title: "О Полке · новый лендинг", label: "Предпросмотр", icon: LayoutGrid, run: previewSite }];
+  const commands = [{ title: "Добавить материал", label: "Действие", icon: Plus, run: add }, ...sections.map(item => ({ title: item.label, label: "Раздел", icon: item.icon, run: () => navigate(item.id) })), { title: "polka.id · Аккаунт", label: "Раздел", icon: UserRound, run: () => navigate("account") }, { title: "О polka · новый лендинг", label: "Предпросмотр", icon: LayoutGrid, run: previewSite }];
   const rows = [...commands.filter(item => item.title.toLocaleLowerCase("ru").includes(q)), ...materials.filter(item => `${item.title} ${item.subject}`.toLocaleLowerCase("ru").includes(q)).map(item => ({ title: item.title, label: item.subject || "Материал", icon: FileText, run: () => open(item.id) })), ...topics.filter(item => `${item.title} ${item.body}`.toLocaleLowerCase("ru").includes(q)).map(item => ({ title: item.title, label: "Понятие · открыть источник", icon: BookOpen, run: () => open(item.materialId) }))].slice(0, 10);
   const selected = Math.min(active, Math.max(0, rows.length - 1));
   const choose = (index: number) => { const row = rows[index]; if (row) { close(); row.run(); } };

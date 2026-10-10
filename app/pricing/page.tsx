@@ -5,7 +5,7 @@ import { Check, FileText, Brain, MessageSquare, Smartphone } from "lucide-react"
 import { LegalDocument, Requisites } from "@/components/legal/document";
 import { PLAN, PILOT_LIMITS } from "@/lib/plans";
 
-export const metadata: Metadata = { title: "Тариф — Полка", description: "Полка: 399 ₽ за 30 дней. 100 запусков ИИ, 100 материалов, 300 МБ файлов, конспекты, помощник и повторение." };
+export const metadata: Metadata = { title: "Тариф — polka", description: "Полка: 399 ₽ за 30 дней. 100 запусков ИИ, 100 материалов, 300 МБ файлов, конспекты, помощник и повторение." };
 export default function PricingPage() {
   return <LegalDocument title="Один тариф для вашей учёбы" intro="Понятная цена за личную библиотеку и инструменты, которые помогают разобраться в материале и вернуться к нему.">
     <section className="legal-notice pricing-summary"><span className="pill">Полка · все функции</span><div className="plan-price"><strong>{PLAN.priceRub} ₽</strong><span>за {PLAN.periodDays} дней</span></div><p>Итоговая цена в рублях, без дополнительных сборов сервиса. Продление вручную; автоматического списания и годового обязательства нет.</p><div className="pricing-cta"><a href={billingEnabled()?"/checkout":"/"} className="button primary">{billingEnabled()?"Подключить · 399 ₽":"Попробовать приложение"}</a><a href="/payment">Условия оплаты и возврата</a></div><p className="pricing-status">{billingEnabled()?<>Оплата через ЮKassa. Доступ активируется после подтверждения платежа; продление вручную.</>:<><strong>Продажи ещё не открыты.</strong> Пока доступ бесплатный, без карты. Оформление откроется после завершения подключения магазина.</>}</p></section>

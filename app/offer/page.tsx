@@ -5,7 +5,7 @@ import { PLAN, PILOT_LIMITS } from "@/lib/plans";
 import { billingEnabled } from "@/lib/billing";
 export const dynamic='force-dynamic';
 
-export const metadata: Metadata = { title: "Оферта — Полка", description: "Условия тестового доступа и подписки Полка: 399 ₽ за 30 дней, порядок оплаты, предоставления доступа и возврата." };
+export const metadata: Metadata = { title: "Оферта — polka", description: "Условия тестового доступа и подписки Полка: 399 ₽ за 30 дней, порядок оплаты, предоставления доступа и возврата." };
 export default function OfferPage() {
   const enabled=billingEnabled();
   return <LegalDocument title="Публичная оферта" intro="Условия предоставления доступа к учебному приложению «Полка» и покупки подписки.">

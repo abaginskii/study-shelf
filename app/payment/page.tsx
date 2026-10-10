@@ -6,7 +6,7 @@ import { LegalDocument, Requisites } from "@/components/legal/document";
 import { legalDetails } from "@/components/legal/details";
 import { PLAN } from "@/lib/plans";
 
-export const metadata: Metadata = { title: "Оплата и возвраты — Полка", description: "Цена, предоставление доступа, ручное продление, чеки и возврат подписки Полка." };
+export const metadata: Metadata = { title: "Оплата и возвраты — polka", description: "Цена, предоставление доступа, ручное продление, чеки и возврат подписки Полка." };
 export default function PaymentPage() {
   return <LegalDocument title="Оплата и возвраты" intro={`Подписка «${PLAN.name}»: ${PLAN.priceRub} ₽ за ${PLAN.periodDays} дней. Без автоматического продления.`}>
     <section className="legal-notice"><strong>{billingEnabled()?"Оплата через ЮKassa":"Цена опубликована, приём платежей ещё не открыт"}</strong><p>{billingEnabled()?"Покупка доступна в аккаунте и на странице оформления. Итоговая сумма показывается до перехода в ЮKassa. Регистрация и просмотр тарифа сами по себе не создают платное обязательство.":"Сейчас можно пользоваться бесплатным тестовым доступом. Приём денег пока выключен; оформление откроется после завершения подключения магазина."}</p><a href="/pricing">Все функции и точные лимиты тарифа →</a></section>

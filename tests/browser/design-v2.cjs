@@ -3,6 +3,8 @@ const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { randomUUID } = require('node:crypto');
+const { verifyTelegramPromo } = require('./telegram-promo.cjs');
+const { verifyLandingBrand } = require('./landing-brand.cjs');
 const base = process.env.POLKA_TEST_URL || 'http://127.0.0.1:3100';
 assert(['localhost', '127.0.0.1'].includes(new URL(base).hostname), 'Never run fixture tests against production');
 const fixture = JSON.parse(fs.readFileSync(process.env.POLKA_TEST_FIXTURE || '/private/tmp/polka-v2-fixture.json', 'utf8'));
@@ -18,6 +20,7 @@ async function main() {
   try {
     async function context(username) {
       const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' });
+      await ctx.addInitScript(() => localStorage.setItem('polka.community.telegram.v1', String(Date.now() + 30 * 24 * 60 * 60 * 1000)));
       if (username) {
         const response = await ctx.request.post(`${base}/api/auth`, { data: { action: 'login', username, password: 'polka-design-test-only-2026' } });
         assert.equal(response.status(), 200);
@@ -32,11 +35,11 @@ async function main() {
     }
     const anonymous = await context();
     await anonymous.page.goto(base);
-    await anonymous.page.locator('.landing').waitFor();
+    await anonymous.page.locator('[data-polka-landing]').waitFor();
     assert.equal(await anonymous.page.locator('.design-version-switch').count(), 0);
     assert.equal((await (await anonymous.ctx.request.get(`${base}/api/session`)).json()).designPreview, false);
     await anonymous.ctx.close();
-    check('anonymous remains on classic landing');
+    check('anonymous sees the new public landing without owner workspace access');
 
     const student = await context('student');
     const studentSession = await (await student.ctx.request.get(`${base}/api/session`)).json();
@@ -204,10 +207,10 @@ async function main() {
       await page.getByRole('button', { name: 'Открыть поиск и команды' }).click();
       await search.fill('новый лендинг');
       await page.keyboard.press('Enter');
-      await page.locator('.v2-landing').waitFor();
+      await page.locator('[data-polka-landing]').waitFor();
       await fits(`${width} landing`);
       if (width === 390 || width === 1440) await page.screenshot({ path: `${screenshots}/landing-${width}.png`, fullPage: true });
-      await page.getByRole('button', { name: 'В мою библиотеку' }).click();
+      await page.getByRole('button', { name: 'К моей полке' }).click();
       await page.getByRole('button', { name: 'Добавить материал', exact: true }).first().click();
       const upload = await page.getByRole('dialog', { name: 'Добавить материал' }).boundingBox();
       assert(upload.x >= 0 && upload.x + upload.width <= width + 1);
@@ -217,8 +220,10 @@ async function main() {
     }
     assert.deepEqual(errors, [], 'No uncaught browser errors');
     check('no browser exceptions');
-    console.log(`${passed} browser scenarios passed; screenshots: ${screenshots}`);
     await ctx.close();
+    passed += await verifyLandingBrand(browser, base, screenshots);
+    passed += await verifyTelegramPromo(browser, base, screenshots);
+    console.log(`${passed} browser scenarios passed; screenshots: ${screenshots}`);
   } finally { await browser.close(); }
 }
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalDocument, Requisites } from "@/components/legal/document";
 import { legalDetails } from "@/components/legal/details";
 
-export const metadata: Metadata = { title: "Конфиденциальность — Полка", description: "Какие данные обрабатывает Полка, как работает личная библиотека и что передаётся ИИ." };
+export const metadata: Metadata = { title: "Конфиденциальность — polka", description: "Какие данные обрабатывает Полка, как работает личная библиотека и что передаётся ИИ." };
 export default function PrivacyPage() {
   return <LegalDocument title="Конфиденциальность" intro="Как устроены аккаунт, личная библиотека и обработка материалов искусственным интеллектом.">
     <section><h2>1. Кто обрабатывает данные</h2><p>Оператор приложения — {legalDetails.name}, ИНН {legalDetails.inn}. Для вопросов о данных и запросов об их исправлении или удалении: <a href={`mailto:${legalDetails.email}`}>{legalDetails.email}</a>.</p></section>
