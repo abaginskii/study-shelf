@@ -1,6 +1,6 @@
 /* Cache public offline assets only. Account data and API responses never enter Cache Storage. */
-const CACHE='polka-offline-v2';
-const ASSETS=['/offline.html','/icons/icon-192.png'];
+const CACHE='polka-offline-v3';
+const ASSETS=['/offline.html','/icons/polka-192.png'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>Promise.all(ASSETS.map(path=>cache.add(new Request(path,{credentials:'omit',cache:'reload'}))))).then(()=>self.skipWaiting()));
 });
