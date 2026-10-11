@@ -1,3 +1,6 @@
+## Current pilot authentication
+Login/password registration and sign-in only. Account contact email saves without verification; it is not an authentication identity or a password reset channel. No mail service/key is required. Old email challenge API actions are disabled; existing canonical usernames, sessions, account IDs and libraries remain. Account shows the canonical login explicitly.
+
 # Mobile, email accounts and subjects
 
 All authenticated installed phone PWAs receive the app workspace. Eligibility affects presentation only, not owner permissions. The phone browser provides library reading, folders, account and a persistent install invitation. Android installs the PWA through its browser; iPhone uses Add to Home Screen. No APK is distributed.
