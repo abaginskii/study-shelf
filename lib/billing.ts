@@ -1,5 +1,5 @@
-import {AppError,readJSON,writeObject,mutateLibrary,safeId} from './storage';
-import {PLAN} from './plans';
+import {AppError,getUserLimits,readJSON,writeObject,mutateLibrary,safeId} from './storage';
+import {PLAN,OWNER_LIMITS} from './plans';
 import type {User,Library} from './types';
 import {consumeLimit} from './auth';
 export type BillingOrder={id:string;userId:string;username:string;contactEmail:string;amount:string;currency:'RUB';periodDays:number;createdAt:string;offerAcceptedAt:string;offerVersion:string;status:'created'|'pending'|'succeeded'|'canceled'|'refunded';paymentId?:string;confirmationUrl?:string;test:boolean;refunds?:{id:string;amount:string}[];canonicalRefundedRub?:number;receiptSentAt?:string};
@@ -72,7 +72,7 @@ export async function createCheckout(user:User,input:{requestId:string;email:str
  if(!billingEnabled())throw new AppError('Приём платежей ещё не открыт.',503);safeId(input.requestId);
  const email=input.email.trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)throw new AppError('Укажите email для чека.');if(input.acceptedOffer!==true)throw new AppError('Для покупки нужно принять оферту.');
  let stored=await readJSON<BillingOrder>(orderPath(input.requestId));
- if(!stored){const now=new Date().toISOString();const order:BillingOrder={id:input.requestId,userId:user.id,username:user.username,contactEmail:email,amount:PLAN.priceRub.toFixed(2),currency:'RUB',periodDays:PLAN.periodDays,createdAt:now,offerAcceptedAt:now,offerVersion:'2026-10-06',status:'created',test:billingTest()};
+ if(!stored){const now=new Date().toISOString();const order:BillingOrder={id:input.requestId,userId:user.id,username:user.username,contactEmail:email,amount:PLAN.priceRub.toFixed(2),currency:'RUB',periodDays:PLAN.periodDays,createdAt:now,offerAcceptedAt:now,offerVersion:PLAN.offerVersion,status:'created',test:billingTest()};
   // Reserve and bound the order index before a provider can receive any payment request.
   await mutateLibrary(user.id,library=>{library.paymentOrders??=[];if(library.paymentOrders.includes(order.id))return;if(library.paymentOrders.length>=250)throw new AppError('Достигнут предел истории заказов. Обратитесь в поддержку.');library.paymentOrders.push(order.id)});
   try{await writeObject(orderPath(order.id),JSON.stringify(order),{createOnly:true})}catch(error){if(!(error instanceof AppError)||error.status!==409)throw error}stored=await readJSON<BillingOrder>(orderPath(order.id));
@@ -100,3 +100,7 @@ export async function receiveBillingEvent(event:string,object:{id?:string;paymen
  }if(saved)await grantOrder(saved);
 }
 export async function receiptSent(id:string){for(let i=0;i<5;i++){const old=await readJSON<BillingOrder>(orderPath(id));if(!old||!['succeeded','refunded'].includes(old.value.status))throw new AppError('Успешный заказ не найден.',404);try{const value={...old.value,receiptSentAt:old.value.receiptSentAt||new Date().toISOString()};await writeObject(orderPath(id),JSON.stringify(value),{etag:old.etag});return publicOrder(value)}catch(error){if(!(error instanceof AppError)||error.status!==409||i===4)throw error}}}
+
+export async function requireUserStudyAccess(uid:string,library:Library){
+ if(await getUserLimits(uid)!==OWNER_LIMITS)requireStudyAccess(library);
+}

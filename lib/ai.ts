@@ -2,11 +2,11 @@ import {generateText,streamText,Output,gateway,experimental_transcribe,uploadFil
 import {google} from '@ai-sdk/google';
 import {z} from 'zod';
 import {randomUUID} from 'node:crypto';
-import {AppError,mutateLibrary,assertAssessmentCapacity} from './storage';
+import {AppError,getUserLimits,mutateLibrary,assertAssessmentCapacity} from './storage';
 import {consumeLimit} from './auth';
 import {inspectFile} from './files';
 import type {Material,Question,Chat,ChatSource,Concept,Assessment,AssessmentRecord} from './types';
-import {PILOT_LIMITS,AI_PERIOD_MS} from './plans';
+import {PILOT_LIMITS,OWNER_LIMITS,AI_PERIOD_MS} from './plans';
 import {requireStudyAccess,subscriptionAccess} from './billing';
 
 const GOOGLE_MODEL='gemini-3.1-flash-lite';
@@ -17,14 +17,15 @@ const model=()=>usesGoogle()?google((process.env.AI_MODEL||GOOGLE_MODEL).replace
 
 export async function aiQuota(uid:string){
  if(!aiAvailable())throw new AppError('ИИ ещё не подключён. Материал сохранён; обработку можно повторить позже.',503);
+ const limits=await getUserLimits(uid);
  await mutateLibrary(uid,lib=>{
   const now=new Date();const day=now.toISOString().slice(0,10);if(lib.aiUsage.day!==day)lib.aiUsage={day,count:0};
-  requireStudyAccess(lib);const access=subscriptionAccess(lib);
+  if(limits!==OWNER_LIMITS)requireStudyAccess(lib);const access=subscriptionAccess(lib);
   if(access.paid&&access.startsAt&&lib.aiPeriod?.startedAt!==access.startsAt)lib.aiPeriod={startedAt:access.startsAt,count:0};
   const startedAt=Date.parse(lib.aiPeriod?.startedAt||'');
   if(!Number.isFinite(startedAt)||startedAt>now.getTime()||startedAt+AI_PERIOD_MS<=now.getTime())lib.aiPeriod={startedAt:now.toISOString(),count:0};
-  if(lib.aiUsage.count>=PILOT_LIMITS.aiDaily)throw new AppError(`На сегодня использованы ${PILOT_LIMITS.aiDaily} запросов к ИИ. Возвращайтесь завтра.`,429);
-  if(lib.aiPeriod!.count>=PILOT_LIMITS.aiPeriod)throw new AppError(`За текущие 30 дней использованы ${PILOT_LIMITS.aiPeriod} запусков ИИ. Новый период начнётся после окончания текущего; материалы сохранены.`,429);
+  if(lib.aiUsage.count>=limits.aiDaily)throw new AppError(`На сегодня использованы ${limits.aiDaily} запросов к ИИ. Возвращайтесь завтра.`,429);
+  if(lib.aiPeriod!.count>=limits.aiPeriod)throw new AppError(`За текущие 30 дней использованы ${limits.aiPeriod} запусков ИИ. Новый период начнётся после окончания текущего; материалы сохранены.`,429);
   lib.aiUsage.count++;lib.aiPeriod!.count++;
  });
  const configured=Number(process.env.AI_DAILY_LIMIT||200);

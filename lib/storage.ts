@@ -3,7 +3,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import {mkdir,readFile,writeFile,rename,unlink,readdir,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {emptyLibrary,type Library,type Material,type MaterialCard,type Chat,type ChatMessage,type Topic,type AssessmentRecord} from './types';
-import {PILOT_LIMITS} from './plans';
+import {PILOT_LIMITS,OWNER_LIMITS,type UserLimits} from './plans';
 export class AppError extends Error {constructor(message:string,public status=400){super(message)}}
 const local=()=>process.env.LOCAL_DATA_DIR && !process.env.VERCEL ? process.env.LOCAL_DATA_DIR : undefined;
 export const storageReady=()=>!!(local()||process.env.BLOB_READ_WRITE_TOKEN||process.env.BLOB_STORE_ID);
@@ -34,6 +34,16 @@ export async function listObjects(prefix:string,limit=100,cursor?:string):Promis
  await walk('');objects.sort((a,b)=>a.pathname.localeCompare(b.pathname));const start=cursor?Number(cursor):0;if(!Number.isSafeInteger(start)||start<0)throw new AppError('Некорректная страница.');const hasMore=start+limit<objects.length;return {objects:objects.slice(start,start+limit),hasMore,cursor:hasMore?String(start+limit):undefined};
 }
 export async function readJSON<T>(path:string):Promise<{value:T;etag:string}|null>{const result=await readObject(path);return result?{value:JSON.parse(result.data.toString()),etag:result.etag}:null}
+// Resolve privileges from persisted identity, never from a client flag or display name.
+export async function getUserLimits(uid:string):Promise<UserLimits>{
+ const account=await readJSON<{id:string}>('accounts/'+createHash('sha256').update('artem').digest('hex')+'.json');
+ if(account?.value.id!==uid)return PILOT_LIMITS;
+ const configured=process.env.OWNER_USER_ID?.trim();
+ if(configured)return configured===uid?OWNER_LIMITS:PILOT_LIMITS;
+ if(process.env.OWNER_USERNAME?.trim()!=='artem')return PILOT_LIMITS;
+ const pinned=await readJSON<{id:string}>('operations/owner.json');
+ return pinned?.value.id===uid?OWNER_LIMITS:PILOT_LIMITS;
+}
 export const userPath=(id:string)=>`users/${id}`;
 export const libPath=(id:string)=>`${userPath(id)}/library.json`;
 export async function getLibrary(id:string){return (await readJSON<Library>(libPath(id)))?.value||emptyLibrary()}
@@ -42,7 +52,7 @@ export const materialPath=(uid:string,id:string)=>`${userPath(uid)}/materials/${
 export function safeId(id:string){if(!/^[0-9a-f-]{36}$/.test(id))throw new AppError('Материал не найден',404);return id}
 export async function getMaterial(uid:string,id:string){safeId(id);if(!(await getLibrary(uid)).materials.some(m=>m.id===id))throw new AppError('Материал не найден',404);const result=await readJSON<Material>(materialPath(uid,id));if(!result)throw new AppError('Материал не найден',404);return result}
 export function card(m:Material):MaterialCard{return {id:m.id,title:m.title,subject:m.subject,kind:m.kind,createdAt:m.createdAt,updatedAt:m.updatedAt,status:m.status,excerpt:m.text.slice(0,200),hasFile:m.hasFile,filename:m.filename,size:m.size,revision:m.revision||1}}
-export async function saveMaterial(uid:string,m:Material,etag?:string,staged?:string){await writeObject(materialPath(uid,m.id),JSON.stringify(m),etag?{etag}:{createOnly:true});await mutateLibrary(uid,lib=>{const idx=lib.materials.findIndex(x=>x.id===m.id);if(idx<0){if(etag)throw new AppError('Материал уже удалён.',404);if(lib.materials.reduce((sum,x)=>sum+(x.size||0),0)+(lib.uploads||[]).filter(x=>x.pathname!==staged).reduce((sum,x)=>sum+x.size,0)+(m.size||0)>PILOT_LIMITS.storageBytes)throw new AppError('Лимит хранилища: 300 МБ.');if(lib.materials.length>=PILOT_LIMITS.materials)throw new AppError(`Достигнут лимит: ${PILOT_LIMITS.materials} материалов. Удалите ненужные.`);lib.materials.unshift(card(m))}else {if((lib.materials[idx].revision||1)>(m.revision||1))throw new AppError('Материал изменён в другой вкладке.',409);lib.materials[idx]=card(m)}if(staged)lib.uploads=(lib.uploads||[]).filter(x=>x.pathname!==staged)})}
+export async function saveMaterial(uid:string,m:Material,etag?:string,staged?:string){const limits=await getUserLimits(uid);await writeObject(materialPath(uid,m.id),JSON.stringify(m),etag?{etag}:{createOnly:true});await mutateLibrary(uid,lib=>{const idx=lib.materials.findIndex(x=>x.id===m.id);if(idx<0){if(etag)throw new AppError('Материал уже удалён.',404);if(lib.materials.reduce((sum,x)=>sum+(x.size||0),0)+(lib.uploads||[]).filter(x=>x.pathname!==staged).reduce((sum,x)=>sum+x.size,0)+(m.size||0)>limits.storageBytes)throw new AppError(`Лимит хранилища: ${limits.storageBytes/1048576} МБ.`);if(lib.materials.length>=limits.materials)throw new AppError(`Достигнут лимит: ${limits.materials} материалов. Удалите ненужные.`);lib.materials.unshift(card(m))}else {if((lib.materials[idx].revision||1)>(m.revision||1))throw new AppError('Материал изменён в другой вкладке.',409);lib.materials[idx]=card(m)}if(staged)lib.uploads=(lib.uploads||[]).filter(x=>x.pathname!==staged)})}
 
 export async function fileStream(path:string,range:string|null){validPath(path);if(local()){const result=await readObject(path);return result?{stream:new Response(new Uint8Array(result.data)).body,contentRange:null,size:result.data.length}:null}const result=await get(path,{access:'private',useCache:false,headers:range?{Range:range}:undefined});return result?.stream?{stream:result.stream,contentRange:result.headers.get('content-range'),size:Number(result.headers.get('content-length')||result.blob.size||0)}:null}
 
@@ -59,6 +69,7 @@ export async function applyMaterialResult(uid:string,snapshot:Material,changes:P
 
 const topicKey=(title:string)=>title.normalize('NFC').trim().replace(/\s+/g,' ').toLocaleLowerCase('ru');
 export async function importMaterialTopics(uid:string,snapshot:Material){
+ const limits=await getUserLimits(uid);
  const material=(await getMaterial(uid,snapshot.id)).value;
  if(material.sourceVersion!==snapshot.sourceVersion||material.text!==snapshot.text||!material.summary.trim()||material.summaryVersion!==material.sourceVersion)throw new AppError('Конспект изменился. Обновите материал и создайте конспект по текущему тексту.',409);
  const concepts=(material.concepts||[]).filter(concept=>concept.title.trim()&&concept.description.trim()&&concept.sourceQuote&&concept.sourceQuote.length<=500&&material.text.includes(concept.sourceQuote));
@@ -75,7 +86,7 @@ export async function importMaterialTopics(uid:string,snapshot:Material){
    const topic:Topic={id:randomUUID(),title:concept.title.trim().slice(0,160),body:concept.description.trim().slice(0,2000),materialId:material.id,sourceQuote:concept.sourceQuote,sourceVersion:material.sourceVersion,createdAt:new Date().toISOString()};
    existing.set(key,topic);pending.push(topic);topics.push(topic);
   }
-  if(library.topics.length+pending.length>PILOT_LIMITS.topics)throw new AppError(`Для всех понятий недостаточно места: можно сохранить до ${PILOT_LIMITS.topics} тем. Удалите ненужные темы и повторите импорт.`,400);
+  if(library.topics.length+pending.length>limits.topics)throw new AppError(`Для всех понятий недостаточно места: можно сохранить до ${limits.topics} тем. Удалите ненужные темы и повторите импорт.`,400);
   added=pending.length;library.topics.unshift(...pending);
  });
  return {added,skipped,topics,material};
@@ -122,12 +133,14 @@ export async function mutateChat(uid:string,id:string,change:(chat:Chat)=>void){
  throw new AppError('Чат изменился в другой вкладке. Обновите историю.',409);
 }
 export async function createChat(uid:string,message:string,materialIds:string[],id:string=randomUUID()){
+ const limits=await getUserLimits(uid);
  const now=new Date().toISOString();const chat:Chat={id,title:message.slice(0,80),updatedAt:now,materialIds,messages:[],status:'idle',revision:1};
  try{await writeObject(chatPath(uid,id),JSON.stringify(chat),{createOnly:true})}catch(error){if(error instanceof AppError&&error.status===409)return (await getChat(uid,id)).value;throw error}
- try{await mutateLibrary(uid,lib=>{lib.chats??=[];if(lib.chats.length>=PILOT_LIMITS.chats)throw new AppError(`Можно сохранить до ${PILOT_LIMITS.chats} чатов. Удалите ненужные.`);lib.chats.unshift(chatCard(chat))})}catch(error){await removeObject(chatPath(uid,id));throw error}
+ try{await mutateLibrary(uid,lib=>{lib.chats??=[];if(lib.chats.length>=limits.chats)throw new AppError(`Можно сохранить до ${limits.chats} чатов. Удалите ненужные.`);lib.chats.unshift(chatCard(chat))})}catch(error){await removeObject(chatPath(uid,id));throw error}
  return chat;
 }
 export async function beginChatTurn(uid:string,id:string,input:{requestId:string;message?:string;materialIds?:string[];action:'send'|'retry'|'regenerate'}){
+ const limits=await getUserLimits(uid);
  const old=(await getChat(uid,id)).value;
  const completed=old.messages.find(message=>message.role==='assistant'&&message.requestId===input.requestId&&message.status==='complete');
  if(completed)return {chat:old,replay:completed};
@@ -135,7 +148,7 @@ export async function beginChatTurn(uid:string,id:string,input:{requestId:string
  const chat=await mutateChat(uid,id,chat=>{
   replay=chat.messages.find(message=>message.role==='assistant'&&message.requestId===input.requestId&&message.status==='complete');if(replay)return;
   if(chat.pending&&chat.pending.startedAt>Date.now()-150000)throw new AppError('В этом чате уже готовится ответ. Дождитесь его или обновите историю.',409);
-  if(chat.messages.filter(m=>m.role==='assistant').length+(chat.answerVersions?.length||0)>=PILOT_LIMITS.chatAnswers)throw new AppError(`В этом чате уже ${PILOT_LIMITS.chatAnswers} ответов и вариантов. Создайте новый чат; текущая история сохранится.`);
+  if(chat.messages.filter(m=>m.role==='assistant').length+(chat.answerVersions?.length||0)>=limits.chatAnswers)throw new AppError(`В этом чате уже ${limits.chatAnswers} ответов и вариантов. Создайте новый чат; текущая история сохранится.`);
   if(input.materialIds!==undefined)chat.materialIds=input.materialIds;
   let userMessage:ChatMessage;
   if(input.action==='send'){
@@ -143,7 +156,7 @@ export async function beginChatTurn(uid:string,id:string,input:{requestId:string
    // A retried HTTP request with the same id does not duplicate its user turn.
    const existing=chat.messages.find(m=>m.role==='user'&&m.requestId===input.requestId);
    if(existing&&(existing.id!==chat.messages.findLast(m=>m.role==='user')?.id||existing.content!==input.message))throw new AppError('Этот запрос уже относится к предыдущему сообщению. Обновите историю чата.',409);
-   if(!existing&&chat.messages.filter(message=>message.role==='user').length>=PILOT_LIMITS.chatQuestions)throw new AppError(`В этом чате уже ${PILOT_LIMITS.chatQuestions} вопросов. Создайте новый чат; история текущего сохранится.`);
+   if(!existing&&chat.messages.filter(message=>message.role==='user').length>=limits.chatQuestions)throw new AppError(`В этом чате уже ${limits.chatQuestions} вопросов. Создайте новый чат; история текущего сохранится.`);
    userMessage=existing||{id:randomUUID(),role:'user',content:input.message,createdAt:new Date().toISOString(),requestId:input.requestId};
    if(!chat.messages.some(m=>m.id===userMessage.id))chat.messages.push(userMessage);
   }else{
