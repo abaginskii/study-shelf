@@ -1,7 +1,7 @@
 import type {MaterialCard,Library,Material,Chat} from './types';
-export type OwnerUser={id:string;username:string;createdAt:string;materials:number;ready:number;topics:number;chats:number;reviews:number;fileBytes:number;reservedBytes:number;aiToday:number;aiPeriod:number;lastContentAt:string|null;issue?:string};
+export type OwnerUser={email?:string;displayName?:string;id:string;username:string;createdAt:string;materials:number;ready:number;topics:number;chats:number;reviews:number;fileBytes:number;reservedBytes:number;aiToday:number;aiPeriod:number;lastContentAt:string|null;issue?:string};
 export type OwnerOverview={updatedAt:string;complete:boolean;accountObjects:number;loadedUsers:number;warnings:string[];users:OwnerUser[];totals:{users:number;materials:number;ready:number;topics:number;chats:number;reviews:number;fileBytes:number;reservedBytes:number;aiToday:number};registrations:{day:string;count:number}[];kinds:{kind:MaterialCard['kind'];count:number}[]};
-export type OwnerLibrary=Pick<Library,'materials'|'topics'|'reviews'|'chats'|'aiUsage'|'aiPeriod'|'subscription'>;
+export type OwnerLibrary=Pick<Library,'materials'|'topics'|'reviews'|'chats'|'aiUsage'|'aiPeriod'|'subscription'|'subjects'>;
 export type OwnerDetail={user:OwnerUser;library:OwnerLibrary};
 export type OwnerContent={kind:'material';content:Omit<Material,'filePath'>}|{kind:'chat';content:Chat};
 export type HealthStatus='ok'|'warning'|'error'|'unconfigured';

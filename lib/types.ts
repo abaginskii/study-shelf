@@ -12,10 +12,11 @@ export type ChatMessage={id:string;role:'user'|'assistant';content:string;create
 export type ChatCard={id:string;title:string;updatedAt:string;materialIds:string[]};
 export type Chat=ChatCard&{messages:ChatMessage[];answerVersions?:ChatMessage[];status:'idle'|'streaming'|'failed';revision:number;error?:string;pending?:{requestId:string;assistantMessageId:string;userMessageId:string;startedAt:number}};
 export type SubscriptionPeriod={test?:boolean;orderId:string;startsAt:string;endsAt:string;originalEndsAt:string;refundedRub:number};
-export type Library={materials:MaterialCard[];topics:Topic[];reviews:number;chats?:ChatCard[];uploads?:{pathname:string;size:number;createdAt:number}[];aiUsage:{day:string;count:number};aiPeriod?:{startedAt:string;count:number};subscription?:{periods:SubscriptionPeriod[];updatedAt:string};paymentOrders?:string[]};
-export type User={id:string;username:string;passwordHash:string;recoveryHash:string;createdAt:string;version:number};
+export type SubjectFolder={id:string;name:string;aliases:string[];color:string;icon:string};
+export type Library={subjects?:SubjectFolder[];materials:MaterialCard[];topics:Topic[];reviews:number;chats?:ChatCard[];uploads?:{pathname:string;size:number;createdAt:number}[];aiUsage:{day:string;count:number};aiPeriod?:{startedAt:string;count:number};subscription?:{periods:SubscriptionPeriod[];updatedAt:string};paymentOrders?:string[]};
+export type User={email?:string;emailVerifiedAt?:string;displayName?:string;id:string;username:string;passwordHash:string;recoveryHash:string;createdAt:string;version:number};
 export type AccountSummary={
- user:{id:string;username:string;createdAt:string};
+ user:{id:string;username:string;createdAt:string;email?:string;displayName?:string};
  access:{kind:'pilot'|'subscription';status:'active'|'expired';paid:boolean;billingEnabled:boolean;startsAt?:string;endsAt?:string;test?:boolean};
  usage:{materials:{used:number;limit:number};storage:{used:number;limit:number;filesBytes:number;reservedBytes:number};ai:{used:number;limit:number;remaining:number;resetsAt:string;periodUsed:number;periodLimit:number;periodRemaining:number;periodResetsAt:string|null};topics:{used:number;limit:number};chats:{used:number;limit:number};reviews:{used:number}};
  limits:{uploadBytes:number;aiFileBytes:number;chatQuestions:number;chatAnswers:number};

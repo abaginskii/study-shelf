@@ -3,6 +3,7 @@ import {ownerConfigured} from './admin-auth';
 import {aiAvailable} from './ai';
 import {billingConfigured,billingEnabled,billingTest,billingHealthCheck,type BillingOrder} from './billing';
 import {AI_PERIOD_MS} from './plans';
+import {emailReady,verifyEmailConnection} from './mailer';
 import type {User,Library} from './types';
 import type {OwnerOverview,OwnerUser,OwnerDetail,OwnerLibrary,OwnerHealth,HealthCheck,OwnerContent} from './admin-types';
 
@@ -11,9 +12,9 @@ async function mapLimit<T,R>(items:T[],fn:(item:T)=>Promise<R>){const results:R[
 export function safeOwnerUser(user:User,library:Library,now=Date.now()):OwnerUser{
  const start=Date.parse(library.aiPeriod?.startedAt||'');const current=Number.isFinite(start)&&start<=now&&start+AI_PERIOD_MS>now;
  const timestamps=[...library.materials.map(item=>item.updatedAt),...(library.chats||[]).map(item=>item.updatedAt),...library.topics.map(item=>item.createdAt)].filter(value=>Number.isFinite(Date.parse(value))).sort();
- return {id:user.id,username:user.username,createdAt:user.createdAt,materials:library.materials.length,ready:library.materials.filter(item=>item.status==='ready').length,topics:library.topics.length,chats:library.chats?.length||0,reviews:library.reviews,fileBytes:library.materials.reduce((sum,item)=>sum+(item.size||0),0),reservedBytes:(library.uploads||[]).reduce((sum,item)=>sum+item.size,0),aiToday:library.aiUsage.day===new Date(now).toISOString().slice(0,10)?library.aiUsage.count:0,aiPeriod:current?library.aiPeriod!.count:0,lastContentAt:timestamps.at(-1)||null};
+ return {id:user.id,username:user.username,email:user.email,displayName:user.displayName,createdAt:user.createdAt,materials:library.materials.length,ready:library.materials.filter(item=>item.status==='ready').length,topics:library.topics.length,chats:library.chats?.length||0,reviews:library.reviews,fileBytes:library.materials.reduce((sum,item)=>sum+(item.size||0),0),reservedBytes:(library.uploads||[]).reduce((sum,item)=>sum+item.size,0),aiToday:library.aiUsage.day===new Date(now).toISOString().slice(0,10)?library.aiUsage.count:0,aiPeriod:current?library.aiPeriod!.count:0,lastContentAt:timestamps.at(-1)||null};
 }
-export function safeOwnerLibrary(library:Library):OwnerLibrary{return {materials:library.materials,topics:library.topics,reviews:library.reviews,chats:library.chats,aiUsage:library.aiUsage,aiPeriod:library.aiPeriod,subscription:library.subscription}}
+export function safeOwnerLibrary(library:Library):OwnerLibrary{return {subjects:library.subjects,materials:library.materials,topics:library.topics,reviews:library.reviews,chats:library.chats,aiUsage:library.aiUsage,aiPeriod:library.aiPeriod,subscription:library.subscription}}
 export async function findOwnerUser(id:string){safeId(id);const index=await listObjects('accounts/',MAX_USERS);const accounts=await mapLimit(index.objects,object=>readJSON<User>(object.pathname));const user=accounts.find(account=>account?.value.id===id)?.value;if(!user)throw new AppError(index.hasMore?'Аккаунт не найден в первых 1000 записях.':'Аккаунт не найден.',404);return user}
 export async function ownerOverview():Promise<OwnerOverview>{
  const now=Date.now();const index=await listObjects('accounts/',MAX_USERS);let failed=0;
@@ -33,6 +34,9 @@ export async function ownerHealth(live=false):Promise<OwnerHealth>{
  const checks:HealthCheck[]=[];const checkedAt=new Date().toISOString();const saved=await readJSON<{history:OwnerHealth['history']}>(healthPath).catch(()=>null);
  const storageStart=Date.now();try{const owner=await readObject('operations/owner.json');const accounts=await listObjects('accounts/',1);checks.push({name:'Хранилище',status:'ok',detail:`Чтение и список доступны. ${accounts.objects.length?'Аккаунты найдены.':'Пока нет аккаунтов.'}${owner?' Профиль владельца закреплён.':''}`,latencyMs:Date.now()-storageStart})}catch{checks.push({name:'Хранилище',status:'error',detail:'Не удалось прочитать хранилище.',latencyMs:Date.now()-storageStart})}
  checks.push({name:'Вход и права',status:process.env.AUTH_SECRET&&ownerConfigured()?'ok':'unconfigured',detail:process.env.AUTH_SECRET&&ownerConfigured()?'Сессия проверена сервером; доступ разрешён владельцу.':'Проверьте серверную настройку входа и владельца.'});
+ if(!emailReady())checks.push({name:'Проверочные письма',status:'unconfigured',detail:'SMTP_PASSWORD не настроен. Регистрация и привязка почты пока недоступны.'});
+ else if(live){const started=Date.now();try{await verifyEmailConnection();checks.push({name:'Проверочные письма',status:'ok',detail:'SMTP подтвердил подключение и пароль. Письма при проверке не отправлялись.',latencyMs:Date.now()-started})}catch{checks.push({name:'Проверочные письма',status:'error',detail:'Не удалось подключиться к SMTP. Проверьте пароль приложения и доступ к почтовым клиентам.'})}}
+ else checks.push({name:'Проверочные письма',status:'warning',detail:'SMTP настроен; соединение ещё не проверено.'});
  if(!aiAvailable())checks.push({name:'Искусственный интеллект',status:'unconfigured',detail:'Провайдер ИИ не настроен.'});
  else if(live&&process.env.GOOGLE_GENERATIVE_AI_API_KEY){const started=Date.now();try{const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models',{headers:{'x-goog-api-key':process.env.GOOGLE_GENERATIVE_AI_API_KEY},cache:'no-store',signal:AbortSignal.timeout(10000)});checks.push({name:'Искусственный интеллект',status:response.ok?'ok':'error',detail:response.ok?'Gemini подтвердил ключ; список моделей доступен. Генерация и квоты не проверялись.':`Gemini отклонил проверку: HTTP ${response.status}.`,latencyMs:Date.now()-started})}catch{checks.push({name:'Искусственный интеллект',status:'error',detail:'Gemini не ответил на проверку.',latencyMs:Date.now()-started})}}
  else checks.push({name:'Искусственный интеллект',status:'warning',detail:'Провайдер настроен. Запустите проверку соединения; генерация не выполняется.'});

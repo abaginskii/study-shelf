@@ -82,7 +82,7 @@ async function verifyLandingBrand(browser, base, screenshots) {
     await site.getByRole('button', { name: 'Создать свою полку', exact: true }).click();
     const registration = page.getByRole('dialog', { name: 'Ваша полка начинается здесь', exact: true });
     await registration.waitFor();
-    assert.equal(await registration.locator('input[name="username"]').getAttribute('required'), '');
+    assert.equal(await registration.locator('input[name="email"]').getAttribute('required'), '');
     assert.equal(await registration.locator('input[name="password"]').getAttribute('minlength'), '10');
     assert.equal(await registration.locator('input[name="adult"]').getAttribute('required'), '');
     assert.equal(postRequests.length, 0, 'Opening CTA must not create an account');
