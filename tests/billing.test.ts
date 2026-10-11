@@ -5,15 +5,15 @@ import {mkdtemp,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createCheckout,receiveBillingEvent,ownedOrder,subscriptionAccess,requireStudyAccess,grantOrder,publicOrder,syncOrder,type BillingOrder} from '../lib/billing';
-import {getLibrary} from '../lib/storage';
+import {getLibrary,writeObject} from '../lib/storage';
 import type {User} from '../lib/types';
 test('YooKassa checkout is idempotent; verified payments grant once; spoofed callbacks and refunds cannot create access',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'polka-billing-'));process.env.LOCAL_DATA_DIR=dir;delete process.env.VERCEL;process.env.YOOKASSA_SHOP_ID='42';process.env.YOOKASSA_SECRET_KEY='unit-test-placeholder';process.env.YOOKASSA_ENABLED='true';process.env.YOOKASSA_TEST_MODE='false';
- const user:User={id:randomUUID(),username:'alice',createdAt:new Date().toISOString(),passwordHash:'private',recoveryHash:'private',version:1};const requestId=randomUUID();const payments=new Map<string,any>(),keys=new Map<string,string>(),refunds=new Map<string,any>();const original=globalThis.fetch;let createCalls=0;
+ const user:User={id:randomUUID(),username:'alice',createdAt:new Date().toISOString(),passwordHash:'private',recoveryHash:'private',version:1};const requestId=randomUUID();const payments=new Map<string,any>(),keys=new Map<string,string>(),refunds=new Map<string,any>();const original=globalThis.fetch;let createCalls=0;let expectedPrice='50.00';
  globalThis.fetch=async(input,options)=>{
   const url=String(input);assert.ok(url.startsWith('https://api.yookassa.ru/v3/'));assert.ok((options?.headers as Record<string,string>).Authorization.startsWith('Basic '));
   if(options?.method==='POST'){
-   createCalls++;const data=JSON.parse(String(options.body));assert.equal(data.amount.value,'399.00');assert.equal(data.amount.currency,'RUB');assert.equal(data.capture,true);assert.equal(data.save_payment_method,false);assert.ok(!data.receipt);assert.ok(!data.payment_method_data);assert.ok(data.confirmation.return_url.startsWith('https://study-shelf-three.vercel.app/checkout?order='));
+   createCalls++;const data=JSON.parse(String(options.body));assert.equal(data.amount.value,expectedPrice);assert.equal(data.amount.currency,'RUB');assert.equal(data.capture,true);assert.equal(data.save_payment_method,false);assert.ok(!data.receipt);assert.ok(!data.payment_method_data);assert.ok(data.confirmation.return_url.startsWith('https://study-shelf-three.vercel.app/checkout?order='));
    const key=(options.headers as Record<string,string>)['Idempotence-Key'];let id=keys.get(key);if(!id){id=randomUUID();keys.set(key,id);payments.set(id,{id,status:'pending',paid:false,test:false,amount:data.amount,metadata:data.metadata,recipient:{account_id:'42'},confirmation:{confirmation_url:'https://yoomoney.ru/checkout/'+id}})}return Response.json(payments.get(id));
   }
   const id=url.split('/').at(-1)!;if(url.includes('/refunds/'))return Response.json(refunds.get(id));return payments.has(id)?Response.json(payments.get(id)):Response.json({error:'not_found'},{status:404});
@@ -26,11 +26,15 @@ test('YooKassa checkout is idempotent; verified payments grant once; spoofed cal
   const period=library.subscription!.periods[0];assert.equal(Date.parse(period.originalEndsAt)-Date.parse(period.startsAt),30*86400000);
   await assert.rejects(ownedOrder(randomUUID(),requestId),/не найден/);assert.ok(!JSON.stringify(publicOrder(await ownedOrder(user.id,requestId))).includes('alice@example.ru'));
   const bad=structuredClone(payment);bad.amount.value='1.00';payments.set(payment.id,bad);await assert.rejects(syncOrder(orders[0]),/соответствует/);payments.set(payment.id,payment);
-  const partial={id:randomUUID(),payment_id:payment.id,status:'succeeded',amount:{value:'100.00',currency:'RUB'}};refunds.set(partial.id,partial);await Promise.all([receiveBillingEvent('refund.succeeded',{id:partial.id}),receiveBillingEvent('refund.succeeded',{id:partial.id})]);library=await getLibrary(user.id);assert.equal(library.subscription!.periods[0].refundedRub,100);assert.equal((await ownedOrder(user.id,requestId)).refunds?.length,1);
-  const remaining={id:randomUUID(),payment_id:payment.id,status:'succeeded',amount:{value:'299.00',currency:'RUB'}};refunds.set(remaining.id,remaining);
-  payment.refunded_amount={value:'399.00',currency:'RUB'};await syncOrder(orders[0]);library=await getLibrary(user.id);assert.equal(subscriptionAccess(library).paid,false,'canonical refund removes access even without webhook');assert.throws(()=>requireStudyAccess(library),/завершён/);
-  await receiveBillingEvent('refund.succeeded',{id:remaining.id});assert.equal((await getLibrary(user.id)).subscription!.periods[0].refundedRub,399,'callback after reconciliation does not double count');
+  const partial={id:randomUUID(),payment_id:payment.id,status:'succeeded',amount:{value:'10.00',currency:'RUB'}};refunds.set(partial.id,partial);await Promise.all([receiveBillingEvent('refund.succeeded',{id:partial.id}),receiveBillingEvent('refund.succeeded',{id:partial.id})]);library=await getLibrary(user.id);assert.equal(library.subscription!.periods[0].refundedRub,10);assert.equal((await ownedOrder(user.id,requestId)).refunds?.length,1);
+  const remaining={id:randomUUID(),payment_id:payment.id,status:'succeeded',amount:{value:'40.00',currency:'RUB'}};refunds.set(remaining.id,remaining);
+  payment.refunded_amount={value:'50.00',currency:'RUB'};await syncOrder(orders[0]);library=await getLibrary(user.id);assert.equal(subscriptionAccess(library).paid,false,'canonical refund removes access even without webhook');assert.throws(()=>requireStudyAccess(library),/завершён/);
+  await receiveBillingEvent('refund.succeeded',{id:remaining.id});assert.equal((await getLibrary(user.id)).subscription!.periods[0].refundedRub,50,'callback after reconciliation does not double count');
   await syncOrder(orders[0]);assert.equal((await ownedOrder(user.id,requestId)).status,'refunded');assert.equal(subscriptionAccess(await getLibrary(user.id)).paid,false,'late succeeded callback cannot revive refunded access');
+  expectedPrice='399.00';const historicalId=randomUUID();const historical:BillingOrder={...orders[0],id:historicalId,status:'created',amount:'399.00',paymentId:undefined,confirmationUrl:undefined,createdAt:new Date().toISOString()};
+  await writeObject('billing/orders/'+historicalId+'.json',JSON.stringify(historical));
+  const resumed=await createCheckout(user,{requestId:historicalId,email:'alice@example.ru',acceptedOffer:true,amount:'1.00'} as any);assert.equal(resumed.amount,'399.00','an old order keeps its captured price; client amount cannot change it');
+  expectedPrice='50.00';const fresh=await createCheckout(user,{requestId:randomUUID(),email:'alice@example.ru',acceptedOffer:true,amount:'1.00'} as any);assert.equal(fresh.amount,'50.00','new orders use the server pilot price');
   const before=createCalls;await assert.rejects(createCheckout(user,{requestId:randomUUID(),email:'bad',acceptedOffer:true}));await assert.rejects(createCheckout(user,{requestId:randomUUID(),email:'alice@example.ru',acceptedOffer:false}));process.env.YOOKASSA_ENABLED='false';await assert.rejects(createCheckout(user,{requestId:randomUUID(),email:'alice@example.ru',acceptedOffer:true}),/открыт/);assert.equal(createCalls,before);
  }finally{globalThis.fetch=original;delete process.env.LOCAL_DATA_DIR;delete process.env.YOOKASSA_SHOP_ID;delete process.env.YOOKASSA_SECRET_KEY;delete process.env.YOOKASSA_ENABLED;await rm(dir,{recursive:true,force:true})}
 });
