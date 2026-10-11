@@ -11,8 +11,8 @@ import {getLibrary,mutateLibrary,readJSON,writeObject} from '../lib/storage';
 import {changeSubject,resolveSubjectName,subjectFolders} from '../lib/subjects';
 import type {User,MaterialCard} from '../lib/types';
 async function fixture(fn:()=>Promise<void>){
- const dir=await mkdtemp(join(tmpdir(),'polka-email-test-'));const keys=['LOCAL_DATA_DIR','VERCEL','AUTH_SECRET','SMTP_PASSWORD','MAIL_PROVIDER','SMTP2GO_API_KEY'];const saved=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
- process.env.MAIL_PROVIDER='smtp';delete process.env.SMTP2GO_API_KEY;
+ const dir=await mkdtemp(join(tmpdir(),'polka-email-test-'));const keys=['LOCAL_DATA_DIR','VERCEL','AUTH_SECRET','SMTP_PASSWORD','MAIL_PROVIDER','BREVO_API_KEY'];const saved=Object.fromEntries(keys.map(key=>[key,process.env[key]]));
+ process.env.MAIL_PROVIDER='smtp';delete process.env.BREVO_API_KEY;
  Object.assign(process.env,{LOCAL_DATA_DIR:dir,VERCEL:'',AUTH_SECRET:'isolated-email-fixture-secret-123456789',SMTP_PASSWORD:'fixture-only'});const send=mailDelivery.send;
  try{await fn()}finally{mailDelivery.send=send;for(const key of keys){if(saved[key]===undefined)delete process.env[key];else process.env[key]=saved[key]}await rm(dir,{recursive:true,force:true})}
 }
