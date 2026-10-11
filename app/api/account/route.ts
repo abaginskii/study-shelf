@@ -21,7 +21,7 @@ export async function GET(){return route(async()=>{
  const periodUsed=activePeriod&&library.aiPeriod?.startedAt===new Date(periodStart).toISOString()?library.aiPeriod.count:0;
  const resetsAt=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()+1)).toISOString();
  const account:AccountSummary={
-  user:{id:user.id,username:user.username,createdAt:user.createdAt},
+  user:{id:user.id,username:user.username,createdAt:user.createdAt,email:user.email,displayName:user.displayName},
   access,
   usage:{
    materials:{used:library.materials.length,limit:limits.materials},

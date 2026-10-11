@@ -6,6 +6,7 @@ const { randomUUID } = require('node:crypto');
 const { verifyTelegramPromo } = require('./telegram-promo.cjs');
 const { verifyLandingBrand } = require('./landing-brand.cjs');
 const { verifyPilotBilling } = require('./pilot-billing.cjs');
+const {verifyMobileLibrary}=require('./mobile-library.cjs');
 const { verifyMobilePilot } = require('./mobile-pilot.cjs');
 const base = process.env.POLKA_TEST_URL || 'http://127.0.0.1:3100';
 assert(['localhost', '127.0.0.1'].includes(new URL(base).hostname), 'Never run fixture tests against production');
@@ -20,6 +21,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true, channel: 'chrome' });
   const errors = [];
   try {
+    if (process.env.POLKA_TEST_LIBRARY_ONLY === '1') { console.log(`${await verifyMobileLibrary(browser,base,screenshots)} library scenarios passed`); return; }
     if (process.env.POLKA_TEST_BILLING_ONLY === '1') { console.log(`${await verifyPilotBilling(browser, base, screenshots)} billing browser scenarios passed`); return; }
     if (process.env.POLKA_TEST_MOBILE_ONLY === '1') {
       const mobilePassed = await verifyMobilePilot(browser, base, screenshots, fixture);
@@ -264,6 +266,7 @@ async function main() {
     passed += await verifyLandingBrand(browser, base, screenshots);
     passed += await verifyTelegramPromo(browser, base, screenshots);
     passed += await verifyMobilePilot(browser, base, screenshots, fixture);
+    passed += await verifyMobileLibrary(browser,base,screenshots);
     console.log(`${passed} browser scenarios passed; screenshots: ${screenshots}`);
   } finally { await browser.close(); }
 }

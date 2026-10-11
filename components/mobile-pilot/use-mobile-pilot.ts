@@ -19,3 +19,6 @@ export function useMobilePilot(eligible: boolean) {
   const mobile = useSyncExternalStore(subscribe, mobileSnapshot, serverSnapshot);
   return eligible && mobile;
 }
+
+const browserSnapshot=()=>window.matchMedia(mobileQuery).matches&&!window.matchMedia(standaloneQuery).matches&&!(navigator as Navigator & {standalone?:boolean}).standalone;
+export function useMobileBrowser(){return useSyncExternalStore(subscribe,browserSnapshot,serverSnapshot)}

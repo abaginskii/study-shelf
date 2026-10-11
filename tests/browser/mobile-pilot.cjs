@@ -112,30 +112,32 @@ async function verifyMobilePilot(browser, base, screenshots, fixture) {
     await anonymous.ctx.close();
 
     const student = await context('student', true);
-    assert.equal(student.session.mobilePilotEligible, false, 'Only the pinned owner account is eligible');
+    assert.equal(student.session.mobilePilotEligible, true);
     await student.page.addInitScript(() => {
       localStorage.setItem('polka.mobilePilotEligible', 'true');
       localStorage.setItem('polka.mobile-pilot', 'true');
       localStorage.setItem('polka.design.v2:student', 'v2');
     });
     await student.page.goto(`${base}/?mobilePilot=1`);
-    await student.page.locator('[data-workspace-dashboard]').waitFor();
-    assert.equal(await student.page.locator('.mobile-pilot').count(), 0, 'Client preferences cannot grant pilot access');
+    await student.page.locator('[data-mobile-pilot-dashboard]').waitFor();
+    assert.equal(await student.page.locator('.mobile-pilot').count(), 1);
     assert.equal((await student.ctx.request.get(`${base}/api/admin/overview`)).status(), 403);
     await student.ctx.close();
-    check('anonymous and student installed PWAs keep the released interface; client manipulation cannot grant owner access');
+    check('all authenticated installed users receive app UI; administration stays private');
 
     const browserOnly = await context('artem', false);
     assert.equal(browserOnly.session.mobilePilotEligible, true);
     assert.equal(browserOnly.session.user.id, fixture.artemId);
     await browserOnly.page.goto(base);
-    await browserOnly.page.locator('[data-workspace-dashboard]').waitFor();
+    await browserOnly.page.locator('.mobile-browser').waitFor();
+    assert.equal(await browserOnly.page.locator('.mobile-install-bar').count(),1);
+    await browserOnly.page.screenshot({path:join(screenshots,'mobile-browser-install.png')});
     assert.equal(await browserOnly.page.locator('.mobile-pilot').count(), 0, 'Regular mobile browser is outside the installed-PWA pilot');
     await browserOnly.page.evaluate(() => window.dispatchEvent(new Event('appinstalled')));
     await paint(browserOnly.page);
     assert.equal(await browserOnly.page.locator('.mobile-pilot').count(), 0, 'Installing from a regular browser does not turn the still-open browser tab into standalone mode');
     await browserOnly.ctx.close();
-    check('artem is eligible, but the regular mobile browser retains the released workspace even after appinstalled');
+    check('phone browser shows reduced library and persistent install invitation');
 
     const { ctx, page, session } = await context('artem', true);
     assert.equal(session.mobilePilotEligible, true);
