@@ -3,7 +3,6 @@ import {ownerConfigured} from './admin-auth';
 import {aiAvailable} from './ai';
 import {billingConfigured,billingEnabled,billingTest,billingHealthCheck,type BillingOrder} from './billing';
 import {AI_PERIOD_MS} from './plans';
-import {emailReady,emailProvider,verifyEmailConnection,emailConnectionHint} from './mailer';
 import type {User,Library} from './types';
 import type {OwnerOverview,OwnerUser,OwnerDetail,OwnerLibrary,OwnerHealth,HealthCheck,OwnerContent} from './admin-types';
 
@@ -34,9 +33,7 @@ export async function ownerHealth(live=false):Promise<OwnerHealth>{
  const checks:HealthCheck[]=[];const checkedAt=new Date().toISOString();const saved=await readJSON<{history:OwnerHealth['history']}>(healthPath).catch(()=>null);
  const storageStart=Date.now();try{const owner=await readObject('operations/owner.json');const accounts=await listObjects('accounts/',1);checks.push({name:'Хранилище',status:'ok',detail:`Чтение и список доступны. ${accounts.objects.length?'Аккаунты найдены.':'Пока нет аккаунтов.'}${owner?' Профиль владельца закреплён.':''}`,latencyMs:Date.now()-storageStart})}catch{checks.push({name:'Хранилище',status:'error',detail:'Не удалось прочитать хранилище.',latencyMs:Date.now()-storageStart})}
  checks.push({name:'Вход и права',status:process.env.AUTH_SECRET&&ownerConfigured()?'ok':'unconfigured',detail:process.env.AUTH_SECRET&&ownerConfigured()?'Сессия проверена сервером; доступ разрешён владельцу.':'Проверьте серверную настройку входа и владельца.'});
- if(!emailReady())checks.push({name:'Проверочные письма',status:'unconfigured',detail:'BREVO_API_KEY / SMTP_PASSWORD не настроен. Регистрация и привязка почты пока недоступны.'});
- else if(live){const started=Date.now();try{await verifyEmailConnection();checks.push({name:'Проверочные письма',status:'ok',detail:emailProvider()==='brevo'?'Brevo: HTTPS API доступен, адрес отправителя подтверждён. Доставка и квота не проверялись.':'SMTP подтвердил подключение и пароль. Письма при проверке не отправлялись.',latencyMs:Date.now()-started})}catch(error){checks.push({name:'Проверочные письма',status:'error',detail:emailConnectionHint(error),latencyMs:Date.now()-started})}}
- else checks.push({name:'Проверочные письма',status:'warning',detail:`${emailProvider()==='brevo'?'Brevo HTTPS API':'SMTP'} настроен; соединение ещё не проверено.`});
+ checks.push({name:'Контактная почта',status:'ok',detail:'Email сохраняется без писем. Вход по почте отключён; сервис доставки не требуется.'});
  if(!aiAvailable())checks.push({name:'Искусственный интеллект',status:'unconfigured',detail:'Провайдер ИИ не настроен.'});
  else if(live&&process.env.GOOGLE_GENERATIVE_AI_API_KEY){const started=Date.now();try{const response=await fetch('https://generativelanguage.googleapis.com/v1beta/models',{headers:{'x-goog-api-key':process.env.GOOGLE_GENERATIVE_AI_API_KEY},cache:'no-store',signal:AbortSignal.timeout(10000)});checks.push({name:'Искусственный интеллект',status:response.ok?'ok':'error',detail:response.ok?'Gemini подтвердил ключ; список моделей доступен. Генерация и квоты не проверялись.':`Gemini отклонил проверку: HTTP ${response.status}.`,latencyMs:Date.now()-started})}catch{checks.push({name:'Искусственный интеллект',status:'error',detail:'Gemini не ответил на проверку.',latencyMs:Date.now()-started})}}
  else checks.push({name:'Искусственный интеллект',status:'warning',detail:'Провайдер настроен. Запустите проверку соединения; генерация не выполняется.'});
