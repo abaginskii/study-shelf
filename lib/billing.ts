@@ -7,22 +7,24 @@ type Payment={id:string;status:string;paid:boolean;test:boolean;amount:{value:st
 type Refund={id:string;payment_id:string;status:string;amount:{value:string;currency:string}};
 const orderPath=(id:string)=>`billing/orders/${safeId(id)}.json`;
 const mapPath=(id:string)=>`billing/payments/${safeId(id)}.json`;
-export const billingConfigured=()=>/^\d+$/.test(process.env.YOOKASSA_SHOP_ID||'')&&!!process.env.YOOKASSA_SECRET_KEY;
-export const billingEnabled=()=>billingConfigured()&&process.env.YOOKASSA_ENABLED==='true';
 export const billingTest=()=>process.env.YOOKASSA_TEST_MODE==='true';
-export async function billingHealthCheck(){const result=await yooRequest<{account_id:string|number;status?:string;test?:boolean}>('/me');if(String(result.account_id)!==process.env.YOOKASSA_SHOP_ID)throw new AppError('Ключ относится к другому магазину.',409);return {ok:true,shopId:String(result.account_id),status:result.status||null,test:result.test??billingTest(),checkedAt:new Date().toISOString()}}
+const credentials=(test=billingTest())=>({shopId:(test?process.env.YOOKASSA_TEST_SHOP_ID:process.env.YOOKASSA_SHOP_ID)?.trim(),key:(test?process.env.YOOKASSA_TEST_SECRET_KEY:process.env.YOOKASSA_SECRET_KEY)?.trim()});
+export const billingConfigured=(test=billingTest())=>{const config=credentials(test);return /^\d+$/.test(config.shopId||'')&&!!config.key&&(!test||config.key.startsWith('test_'))};
+export const billingEnabled=()=>billingConfigured()&&(billingTest()?process.env.YOOKASSA_TEST_ENABLED:process.env.YOOKASSA_ENABLED)==='true';
+export async function billingHealthCheck(){const result=await yooRequest<{account_id:string|number;status?:string;test?:boolean}>('/me');if(String(result.account_id)!==credentials().shopId)throw new AppError('Ключ относится к другому магазину.',409);if(result.test!==undefined&&result.test!==billingTest())throw new AppError('Режим магазина не соответствует настройкам.',409);return {ok:true,shopId:String(result.account_id),status:result.status||null,test:result.test??billingTest(),checkedAt:new Date().toISOString()}}
 const appUrl=()=>{const url=new URL(process.env.APP_URL||'https://study-shelf-three.vercel.app');if(url.protocol!=='https:')throw new AppError('Адрес оплаты не настроен.',503);return url.origin};
-export async function yooRequest<T>(path:string,method='GET',data?:unknown,idempotenceKey?:string):Promise<T>{
- if(!billingConfigured())throw new AppError('Оплата ещё не подключена.',503);
+export async function yooRequest<T>(path:string,method='GET',data?:unknown,idempotenceKey?:string,test=billingTest()):Promise<T>{
+ if(!billingConfigured(test))throw new AppError(test?'Тестовый магазин ЮKassa ещё не подключён. Реальные списания не выполняются.':'Оплата ещё не подключена.',503);
+ const config=credentials(test);
  if(!/^\/(me|payments(?:\/[0-9a-f-]{36})?|refunds\/[0-9a-f-]{36})$/.test(path))throw new AppError('Некорректный запрос платежа.');
- let response:Response;try{response=await fetch('https://api.yookassa.ru/v3'+path,{method,headers:{Authorization:'Basic '+Buffer.from(process.env.YOOKASSA_SHOP_ID+':'+process.env.YOOKASSA_SECRET_KEY).toString('base64'),'Content-Type':'application/json',...(idempotenceKey?{'Idempotence-Key':idempotenceKey}:{})},body:data===undefined?undefined:JSON.stringify(data),cache:'no-store',signal:AbortSignal.timeout(20000)})}catch{throw new AppError('ЮKassa не ответила. Повторите этот же заказ; повторного списания не будет.',503)}
+ let response:Response;try{response=await fetch('https://api.yookassa.ru/v3'+path,{method,headers:{Authorization:'Basic '+Buffer.from(config.shopId+':'+config.key).toString('base64'),'Content-Type':'application/json',...(idempotenceKey?{'Idempotence-Key':idempotenceKey}:{})},body:data===undefined?undefined:JSON.stringify(data),cache:'no-store',signal:AbortSignal.timeout(20000)})}catch{throw new AppError('ЮKassa не ответила. Повторите этот же заказ; повторного списания не будет.',503)}
  if(!response.ok)throw new AppError(response.status===401?'Платёжный сервис не подтвердил подключение магазина.':'ЮKassa не выполнила запрос. Попробуйте позже или обратитесь в поддержку.',503);
  return await response.json() as T;
 }
 export function subscriptionAccess(library:Library,now=Date.now()){
  const periods=library.subscription?.periods||[];const active=periods.find(period=>Date.parse(period.startsAt)<=now&&Date.parse(period.endsAt)>now);
  const latest=[...periods].sort((a,b)=>b.endsAt.localeCompare(a.endsAt))[0];
- return {kind:periods.length?'subscription' as const:'pilot' as const,status:periods.length&&!active?'expired' as const:'active' as const,paid:!!active,billingEnabled:billingEnabled(),startsAt:active?.startsAt,endsAt:active?.endsAt||latest?.endsAt,test:billingTest()};
+ return {kind:periods.length?'subscription' as const:'pilot' as const,status:periods.length&&!active?'expired' as const:'active' as const,paid:!!active,billingEnabled:billingEnabled(),startsAt:active?.startsAt,endsAt:active?.endsAt||latest?.endsAt,test:active?.test??false};
 }
 export function requireStudyAccess(library:Library){if(subscriptionAccess(library).status==='expired')throw new AppError('Оплаченный период завершён. Продлите доступ в аккаунте; чтение и экспорт сохранены.',402)}
 const refundTotal=(order:BillingOrder)=>Math.min(Number(order.amount),Math.max(order.canonicalRefundedRub||0,(order.refunds||[]).reduce((sum,refund)=>sum+Number(refund.amount),0)));
@@ -33,7 +35,7 @@ export async function grantOrder(order:BillingOrder){
   library.subscription??={periods:[],updatedAt:new Date().toISOString()};let period=library.subscription.periods.find(item=>item.orderId===order.id);
   if(!period){
    const start=Math.max(Date.now(),...library.subscription.periods.map(item=>Date.parse(item.endsAt)));const startsAt=new Date(start).toISOString(),endsAt=new Date(start+order.periodDays*86400000).toISOString();
-   period={orderId:order.id,startsAt,endsAt,originalEndsAt:endsAt,refundedRub:0};library.subscription.periods.push(period);
+   period={orderId:order.id,startsAt,endsAt,originalEndsAt:endsAt,refundedRub:0,test:order.test};library.subscription.periods.push(period);
    // First paid period begins a fresh AI allowance. Renewal allowance starts when its period becomes active.
    if(start<=Date.now())library.aiPeriod={startedAt:startsAt,count:0};
   }
@@ -53,7 +55,7 @@ export async function grantOrder(order:BillingOrder){
  });
 }
 function verifiedPayment(order:BillingOrder,payment:Payment){
- if(!/^[0-9a-f-]{36}$/.test(payment.id)||(order.paymentId&&payment.id!==order.paymentId)||payment.amount?.value!==order.amount||payment.amount?.currency!==order.currency||payment.metadata?.order_id!==order.id||payment.metadata?.user_id!==order.userId||payment.metadata?.app!=='study-shelf'||String(payment.recipient?.account_id)!==process.env.YOOKASSA_SHOP_ID||payment.test!==order.test)throw new AppError('Платёж не соответствует заказу.',409);
+ if(!/^[0-9a-f-]{36}$/.test(payment.id)||(order.paymentId&&payment.id!==order.paymentId)||payment.amount?.value!==order.amount||payment.amount?.currency!==order.currency||payment.metadata?.order_id!==order.id||payment.metadata?.user_id!==order.userId||payment.metadata?.app!=='study-shelf'||String(payment.recipient?.account_id)!==credentials(order.test).shopId||payment.test!==order.test)throw new AppError('Платёж не соответствует заказу.',409);
 }
 function confirmationUrl(value:string|undefined){if(!value)return undefined;try{const url=new URL(value);if(url.protocol==='https:'&&(url.hostname==='yoomoney.ru'||url.hostname.endsWith('.yoomoney.ru')||url.hostname==='yookassa.ru'||url.hostname.endsWith('.yookassa.ru')))return url.toString()}catch{}throw new AppError('ЮKassa вернула неподдерживаемый адрес оплаты.',503)}
 export async function savePayment(order:BillingOrder,payment:Payment){
@@ -80,18 +82,21 @@ export async function createCheckout(user:User,input:{requestId:string;email:str
  if(!stored||stored.value.userId!==user.id)throw new AppError('Заказ не принадлежит вашему аккаунту.',403);
  const order=stored.value;if(order.contactEmail!==email)throw new AppError('Этот заказ создан с другим email. Начните новое оформление.',409);
  if(order.paymentId)return await syncOrder(order);
+ if(order.test!==billingTest())throw new AppError('Режим оплаты изменился. Начните новый заказ.',409);
  if(Date.now()-Date.parse(order.createdAt)>23*3600000)throw new AppError('Срок оформления заказа истёк. Начните новый заказ.',409);
- const payment=await yooRequest<Payment>('/payments','POST',{amount:{value:order.amount,currency:order.currency},capture:true,confirmation:{type:'redirect',return_url:appUrl()+'/checkout?order='+order.id},description:`Полка: ${order.periodDays} дней доступа. Заказ ${order.id}`,save_payment_method:false,metadata:{app:'study-shelf',order_id:order.id,user_id:user.id}},order.id);
+ const payment=await yooRequest<Payment>('/payments','POST',{amount:{value:order.amount,currency:order.currency},capture:true,confirmation:{type:'redirect',return_url:appUrl()+'/checkout?order='+order.id},description:`Полка: ${order.periodDays} дней доступа. Заказ ${order.id}`,save_payment_method:false,metadata:{app:'study-shelf',order_id:order.id,user_id:user.id}},order.id,order.test);
  return await savePayment(order,payment);
 }
 export async function ownedOrder(uid:string,id:string){const old=await readJSON<BillingOrder>(orderPath(id));if(!old||old.value.userId!==uid)throw new AppError('Заказ не найден.',404);return old.value}
-export async function syncOrder(order:BillingOrder){if(!order.paymentId)return order;const payment=await yooRequest<Payment>('/payments/'+safeId(order.paymentId));return savePayment(order,payment)}
+export async function syncOrder(order:BillingOrder){if(!order.paymentId)return order;const payment=await yooRequest<Payment>('/payments/'+safeId(order.paymentId),'GET',undefined,undefined,order.test);return savePayment(order,payment)}
 export function publicOrder(order:BillingOrder){return {id:order.id,status:order.status,amount:order.amount,currency:order.currency,periodDays:order.periodDays,createdAt:order.createdAt,confirmationUrl:order.status==='pending'?order.confirmationUrl:undefined,test:order.test,paymentId:order.paymentId,receiptSentAt:order.receiptSentAt}}
 export async function receiveBillingEvent(event:string,object:{id?:string;payment_id?:string;metadata?:Record<string,string>}){
  if(!object?.id||!['payment.succeeded','payment.canceled','refund.succeeded'].includes(event))throw new AppError('Неподдерживаемое уведомление.');safeId(object.id);
- if(event.startsWith('payment.')){const mapped=await readJSON<{orderId:string}>(mapPath(object.id));const knownId=mapped?.value.orderId||object.metadata?.order_id;if(!knownId||!await readJSON<BillingOrder>(orderPath(knownId)))return;await consumeLimit('billing-event:'+object.id,20,60000);const payment=await yooRequest<Payment>('/payments/'+object.id);const id=payment.metadata?.order_id;if(payment.metadata?.app!=='study-shelf'||!id)return;const order=await readJSON<BillingOrder>(orderPath(id));if(!order)return;await savePayment(order.value,payment);return}
+ if(event.startsWith('payment.')){const mapped=await readJSON<{orderId:string}>(mapPath(object.id));const knownId=mapped?.value.orderId||object.metadata?.order_id;if(!knownId)return;const known=await readJSON<BillingOrder>(orderPath(knownId));if(!known)return;await consumeLimit('billing-event:'+object.id,20,60000);const payment=await yooRequest<Payment>('/payments/'+object.id,'GET',undefined,undefined,known.value.test);const id=payment.metadata?.order_id;if(payment.metadata?.app!=='study-shelf'||!id)return;const order=await readJSON<BillingOrder>(orderPath(id));if(!order)return;await savePayment(order.value,payment);return}
  await consumeLimit('billing-event:'+object.id,20,60000);
- const refund=await yooRequest<Refund>('/refunds/'+object.id);if(refund.id!==object.id||refund.status!=='succeeded')return;safeId(refund.payment_id);const payment=await yooRequest<Payment>('/payments/'+refund.payment_id);const id=payment.metadata?.order_id;if(payment.metadata?.app!=='study-shelf'||!id)return;
+ // Route by the locally mapped payment, never a caller-supplied test flag.
+ if(!object.payment_id)return;safeId(object.payment_id);const mapping=await readJSON<{orderId:string}>(mapPath(object.payment_id));if(!mapping)return;const original=await readJSON<BillingOrder>(orderPath(mapping.value.orderId));if(!original)return;
+ const refund=await yooRequest<Refund>('/refunds/'+object.id,'GET',undefined,undefined,original.value.test);if(refund.id!==object.id||refund.status!=='succeeded'||refund.payment_id!==object.payment_id)return;safeId(refund.payment_id);const payment=await yooRequest<Payment>('/payments/'+refund.payment_id,'GET',undefined,undefined,original.value.test);const id=payment.metadata?.order_id;if(payment.metadata?.app!=='study-shelf'||!id)return;
  let saved:BillingOrder|undefined;
  for(let i=0;i<5;i++){const old=await readJSON<BillingOrder>(orderPath(id));if(!old)return;verifiedPayment(old.value,payment);if(refund.amount.currency!=='RUB'||!Number.isFinite(Number(refund.amount.value))||Number(refund.amount.value)<=0||Number(refund.amount.value)>Number(old.value.amount))throw new AppError('Некорректный возврат.',409);
   const refunds=[...(old.value.refunds||[])];if(!refunds.some(item=>item.id===refund.id))refunds.push({id:refund.id,amount:refund.amount.value});if(refunds.length>50)throw new AppError('Предел истории возвратов.',409);

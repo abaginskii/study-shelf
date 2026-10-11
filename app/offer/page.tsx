@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { LegalDocument, Requisites } from "@/components/legal/document";
 import { legalDetails } from "@/components/legal/details";
 import { PLAN, PILOT_LIMITS } from "@/lib/plans";
-import { billingEnabled } from "@/lib/billing";
+import { billingEnabled,billingTest } from "@/lib/billing";
 export const dynamic='force-dynamic';
 
 export const metadata: Metadata = { title: "Оферта — polka", description: `Условия тестового доступа и подписки Полка: ${PLAN.priceRub} ₽ за ${PLAN.periodDays} дней, порядок оплаты, предоставления доступа и возврата.` };
 export default function OfferPage() {
-  const enabled=billingEnabled();
+  const enabled=billingEnabled()&&!billingTest();
   return <LegalDocument title="Публичная оферта" intro="Условия предоставления доступа к учебному приложению «Полка» и покупки подписки.">
     <section className="legal-notice"><strong>{enabled?'Подписка с отдельной оплатой каждого периода':'Сейчас — бесплатный тестовый доступ'}</strong><p>{enabled?`Тариф ${PLAN.priceRub} ₽ за ${PLAN.periodDays} дней можно оформить в аккаунте через ЮKassa.`:`Тариф ${PLAN.priceRub} ₽ за ${PLAN.periodDays} дней опубликован для запуска продаж. Оплата пока недоступна.`} Создание аккаунта не оформляет платную подписку и не разрешает списания.</p></section>
     <section><h2>1. Исполнитель и принятие условий</h2><p>{legalDetails.name}, ИНН {legalDetails.inn}, плательщик налога на профессиональный доход (далее — Исполнитель), предлагает совершеннолетнему пользователю доступ к «Полке» на изложенных условиях.</p><p>Регистрация после ознакомления с офертой означает принятие условий бесплатного тестового доступа. После открытия продаж платный договор заключается отдельным действием: пользователь выбирает тариф, подтверждает согласие с офертой и оплачивает заказ. До включения оплаты платный договор заключить нельзя.</p><p>Приложение помогает самостоятельной учёбе: хранению и обработке материалов, организации понятий и повторению. Оно не выдаёт документы об образовании, не гарантирует оценку или результат экзамена и не заменяет проверку материала по источникам.</p></section>

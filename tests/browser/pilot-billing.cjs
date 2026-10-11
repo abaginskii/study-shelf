@@ -20,7 +20,14 @@ async function verifyPilotBilling(browser,base,screenshots){
   const orderId=randomUUID();await page.route('**/api/billing/orders/'+orderId,route=>route.fulfill({json:{order:{id:orderId,status:'pending',amount:'399.00',periodDays:30,test:false}}}));
   await page.goto(base+'/checkout?order='+orderId);await page.getByRole('heading',{name:'Ждём подтверждения оплаты'}).waitFor();assert.match(await page.locator('.checkout-price').innerText(),/399 ₽/);
   console.log('PASS Billing: a historical pending order displays its captured price without claiming success');
-  return 3;
+  await page.route('**/api/billing/config',route=>route.fulfill({json:{enabled:true,test:true}}));
+  await page.goto(base+'/checkout');await page.getByRole('heading',{name:'Тестовое оформление'}).waitFor();assert.match(await page.getByRole('status').innerText(),/без списания/);assert.equal(await page.getByRole('button',{name:'Перейти в ЮKassa · 50 ₽'}).isDisabled(),true);
+  await page.screenshot({path:`${screenshots}/sandbox-checkout-390.png`,fullPage:true});
+  await page.unroute('**/api/billing/orders/'+orderId);
+  await page.route('**/api/billing/orders/'+orderId,route=>route.fulfill({json:{order:{id:orderId,status:'succeeded',amount:'50.00',periodDays:30,test:true}}}));
+  await page.goto(base+'/checkout?order='+orderId);await page.getByRole('heading',{name:'Тест пройден'}).waitFor();assert.match(await page.locator('.checkout-form-card').innerText(),/реальные деньги не списывались/);assert.doesNotMatch(await page.locator('.checkout-form-card').innerText(),/Чек НПД будет отправлен/);
+  console.log('PASS Billing: explicit sandbox form and verified-success UI distinguish test access from a real charge');
+  return 4;
  }finally{await ctx.close()}
 }
 module.exports={verifyPilotBilling};
