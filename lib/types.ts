@@ -14,7 +14,7 @@ export type Chat=ChatCard&{messages:ChatMessage[];answerVersions?:ChatMessage[];
 export type SubscriptionPeriod={test?:boolean;orderId:string;startsAt:string;endsAt:string;originalEndsAt:string;refundedRub:number};
 export type SubjectFolder={id:string;name:string;aliases:string[];color:string;icon:string};
 export type Library={subjects?:SubjectFolder[];materials:MaterialCard[];topics:Topic[];reviews:number;chats?:ChatCard[];uploads?:{pathname:string;size:number;createdAt:number}[];aiUsage:{day:string;count:number};aiPeriod?:{startedAt:string;count:number};subscription?:{periods:SubscriptionPeriod[];updatedAt:string};paymentOrders?:string[]};
-export type User={email?:string;emailVerifiedAt?:string;displayName?:string;id:string;username:string;passwordHash:string;recoveryHash:string;createdAt:string;version:number};
+export type User={orvoId?:string;email?:string;emailVerifiedAt?:string;displayName?:string;id:string;username:string;passwordHash:string;recoveryHash:string;createdAt:string;version:number};
 export type AccountSummary={
  user:{id:string;username:string;createdAt:string;email?:string;displayName?:string};
  access:{kind:'pilot'|'subscription';status:'active'|'expired';paid:boolean;billingEnabled:boolean;startsAt?:string;endsAt?:string;test?:boolean};
