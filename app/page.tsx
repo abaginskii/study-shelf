@@ -147,6 +147,12 @@ export default function App() {
   }, []);
   useEffect(() => { void loadSession(); }, [loadSession]);
   useEffect(() => {
+    const url = new URL(window.location.href); const result = url.searchParams.get("orvo"); if (!result) return;
+    url.searchParams.delete("orvo"); window.history.replaceState(window.history.state, "", url);
+    const messages: Record<string, [string, boolean]> = { ok: ["Вы вошли с orvo ID.", false], expired: ["Вход с orvo ID устарел. Нажмите кнопку ещё раз.", true], failed: ["orvo ID не подтвердил вход. Попробуйте ещё раз.", true], off: ["Вход с orvo ID пока не подключён.", true] };
+    const [text, error] = messages[result] || messages.failed; notice(text, error);
+  }, [notice]);
+  useEffect(() => {
     const root = document.documentElement;
     const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
     const original = meta?.content;

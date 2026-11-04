@@ -1,0 +1,21 @@
+@import url("https://fonts.googleapis.com/css2?family=Literata:opsz,wght@7..72,800&display=swap");
+/* orvo ID sign-in button, matching the orvo brand canvas */
+.orvo-button{--ink:#2F3033;position:relative;isolation:isolate;overflow:hidden;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;padding:0 22px;border-radius:20px;background:var(--ink);color:#fff!important;font:800 18px/1 Literata,Georgia,serif;letter-spacing:-.2px;text-decoration:none;transition:transform .2s cubic-bezier(.2,.8,.2,1),box-shadow .3s}
+.orvo-button::before{content:'';position:absolute;inset:0;z-index:-1;background:radial-gradient(ellipse 60% 100% at 50% 0%,rgba(240,96,58,.75),rgba(90,58,102,.6) 45%,transparent 80%);transform:translateY(-35%) scale(1.1);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.orvo-button:hover::before,.orvo-button.busy::before{transform:translateY(0) scale(1.45)}
+.orvo-button:hover{box-shadow:0 10px 30px -12px rgba(182,64,90,.75)}
+.orvo-button:active{transform:scale(.98)}
+.orvo-button:focus-visible{outline:3px solid #F0603A;outline-offset:3px}
+.orvo-button.compact{min-height:48px;font-size:16px;border-radius:16px}
+.orvo-mark{display:inline-grid;place-items:center;flex:none;border-radius:50%;background:radial-gradient(circle at 50% 0%,#F0603A 0%,#B6405A 45%,#4F3A6B 100%);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.orvo-mark svg{width:64%;height:64%;overflow:visible}
+.orvo-mark path{fill:none;stroke:#fff;stroke-width:14;stroke-linecap:round}
+.orvo-mark circle{fill:#fff}
+.orvo-button:hover .orvo-mark{transform:rotate(-35deg)}
+.orvo-button.busy .orvo-mark svg{animation:orvo-spin 1.4s linear infinite}
+@keyframes orvo-spin{to{transform:rotate(360deg)}}
+.orvo-or{display:flex;align-items:center;gap:12px;margin:18px 0;font-size:13px;color:#8b8b93}
+.orvo-or::before,.orvo-or::after{content:'';flex:1;height:1px;background:currentColor;opacity:.3}
+.orvo-terms{font-size:12px;line-height:1.7;color:#8b8b93;margin:10px 0 0;text-align:center}
+.orvo-terms a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+@media (prefers-reduced-motion:reduce){.orvo-button,.orvo-button::before,.orvo-mark{transition:none}.orvo-button.busy .orvo-mark svg{animation:none}}
