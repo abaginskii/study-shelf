@@ -21,6 +21,5 @@ export type AccountSummary={
  usage:{materials:{used:number;limit:number};storage:{used:number;limit:number;filesBytes:number;reservedBytes:number};ai:{used:number;limit:number;remaining:number;resetsAt:string;periodUsed:number;periodLimit:number;periodRemaining:number;periodResetsAt:string|null};topics:{used:number;limit:number};chats:{used:number;limit:number};reviews:{used:number}};
  limits:{uploadBytes:number;aiFileBytes:number;chatQuestions:number;chatAnswers:number};
  aiAvailable:boolean;owner?:boolean;exportUrl:'/api/export';
- orvo?:{linked:boolean;plan:'free'|'plus'|'premium';until:number|null;url:string};
 };
 export const emptyLibrary=():Library=>({materials:[],topics:[],reviews:0,aiUsage:{day:'',count:0}});

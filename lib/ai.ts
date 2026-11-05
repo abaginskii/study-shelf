@@ -6,7 +6,7 @@ import {AppError,getUserLimits,mutateLibrary,assertAssessmentCapacity} from './s
 import {consumeLimit} from './auth';
 import {inspectFile} from './files';
 import type {Material,Question,Chat,ChatSource,Concept,Assessment,AssessmentRecord} from './types';
-import {PILOT_LIMITS,AI_PERIOD_MS,fullAccess} from './plans';
+import {PILOT_LIMITS,OWNER_LIMITS,AI_PERIOD_MS} from './plans';
 import {requireStudyAccess,subscriptionAccess} from './billing';
 
 const GOOGLE_MODEL='gemini-3.1-flash-lite';
@@ -20,7 +20,7 @@ export async function aiQuota(uid:string){
  const limits=await getUserLimits(uid);
  await mutateLibrary(uid,lib=>{
   const now=new Date();const day=now.toISOString().slice(0,10);if(lib.aiUsage.day!==day)lib.aiUsage={day,count:0};
-  if(!fullAccess(limits))requireStudyAccess(lib);const access=subscriptionAccess(lib);
+  if(limits!==OWNER_LIMITS)requireStudyAccess(lib);const access=subscriptionAccess(lib);
   if(access.paid&&access.startsAt&&lib.aiPeriod?.startedAt!==access.startsAt)lib.aiPeriod={startedAt:access.startsAt,count:0};
   const startedAt=Date.parse(lib.aiPeriod?.startedAt||'');
   if(!Number.isFinite(startedAt)||startedAt>now.getTime()||startedAt+AI_PERIOD_MS<=now.getTime())lib.aiPeriod={startedAt:now.toISOString(),count:0};

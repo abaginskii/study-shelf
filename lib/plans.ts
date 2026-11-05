@@ -20,13 +20,3 @@ export const AI_PERIOD_MS = PLAN.periodDays * 86400000;
 export const OWNER_LIMITS = { ...PILOT_LIMITS, materials: 10000, storageBytes: 10 * 1024 ** 3,
  aiDaily: 200, aiPeriod: 6000, topics: 20000, chats: 1000, chatQuestions: 100, chatAnswers: 200 } as const;
 export type UserLimits = { [K in keyof typeof PILOT_LIMITS]: number };
-
-// orvo plus and premium (https://orvo-id.vercel.app/plus): one subscription across orvo projects.
-// Numbers match what orvo ID shows people on /plus.
-export const PLUS_LIMITS = { ...PILOT_LIMITS, materials: 1000, storageBytes: 2 * 1024 ** 3,
- aiDaily: 60, aiPeriod: 1200, topics: 2000, chats: 200, chatQuestions: 40, chatAnswers: 80 } as const;
-export const PREMIUM_LIMITS = { ...PILOT_LIMITS, materials: 5000, storageBytes: 10 * 1024 ** 3,
- aiDaily: 200, aiPeriod: 4000, topics: 10000, chats: 600, chatQuestions: 100, chatAnswers: 200 } as const;
-export type OrvoPlan = 'free' | 'plus' | 'premium';
-/** Owner and orvo subscribers never hit the paid-period wall. */
-export const fullAccess = (limits: UserLimits) => limits === OWNER_LIMITS || limits === PLUS_LIMITS || limits === PREMIUM_LIMITS;

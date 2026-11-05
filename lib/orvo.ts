@@ -13,15 +13,15 @@ export const newState=()=>randomBytes(18).toString('base64url');
 
 type OrvoProfile={sub:string;name:string;username:string;telegram_username?:string|null;avatar?:string};
 
-export async function exchangeCode(code:string,redirectUri:string):Promise<OrvoProfile&{plan?:string;plan_until?:number|null}>{
+export async function exchangeCode(code:string,redirectUri:string):Promise<OrvoProfile>{
  const c=orvoConfig();if(!c.ready)throw new AppError('Вход через orvo ID ещё не настроен.',503);
  const response=await fetch(`${c.url}/api/oauth/token`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({client_id:c.id,client_secret:c.secret,code,redirect_uri:redirectUri}),signal:AbortSignal.timeout(10000)});
  const data=await response.json().catch(()=>({}));
  if(!response.ok||!data.user?.sub)throw new AppError(data.error||'orvo ID не подтвердил вход.',502);
- return {...data.user,plan:data.plan??data.user.plan,plan_until:data.plan_until??data.user.plan_until??null};
+ return data.user;
 }
 
-export const linkPath=(sub:string)=>`orvo-links/${createHash('sha256').update(sub).digest('hex')}.json`;
+const linkPath=(sub:string)=>`orvo-links/${createHash('sha256').update(sub).digest('hex')}.json`;
 
 // Finds the Полка account tied to this orvo ID, or creates one. Created accounts have no usable password.
 export async function userForOrvo(profile:OrvoProfile):Promise<User>{

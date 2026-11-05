@@ -19,11 +19,3 @@
 .orvo-terms{font-size:12px;line-height:1.7;color:#8b8b93;margin:10px 0 0;text-align:center}
 .orvo-terms a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 @media (prefers-reduced-motion:reduce){.orvo-button,.orvo-button::before,.orvo-mark{transition:none}.orvo-button.busy .orvo-mark svg{animation:none}}
-/* orvo plus card in the account: Полка's light card, orvo mark as the only accent */
-.orvo-plus-card{display:flex;align-items:center;gap:18px}
-.orvo-plus-mark{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 50% 0%,#F0603A 0%,#B6405A 45%,#6A47B8 100%)}
-.plan-premium .orvo-plus-mark{background:linear-gradient(160deg,#FFD27A,#F29A3A 50%,#D9452A)}
-.orvo-plus-mark svg{width:62%;height:62%;overflow:visible}.orvo-plus-mark path{fill:none;stroke:#fff;stroke-width:12;stroke-linecap:round}
-.orvo-plus-text{flex:1;min-width:0}.orvo-plus-text h2{font-size:18px;letter-spacing:-.4px}.orvo-plus-text p{margin-top:6px;font-size:13px;line-height:1.7;color:#8a8494}
-.orvo-plus-link{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:13px;color:var(--purple,#7a5ca8);text-decoration:none}
-@media(max-width:720px){.orvo-plus-card{flex-wrap:wrap}}
