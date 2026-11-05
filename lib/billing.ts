@@ -1,5 +1,5 @@
 import {AppError,getUserLimits,readJSON,writeObject,mutateLibrary,safeId} from './storage';
-import {PLAN,OWNER_LIMITS} from './plans';
+import {PLAN,fullAccess} from './plans';
 import type {User,Library} from './types';
 import {consumeLimit} from './auth';
 export type BillingOrder={id:string;userId:string;username:string;contactEmail:string;amount:string;currency:'RUB';periodDays:number;createdAt:string;offerAcceptedAt:string;offerVersion:string;status:'created'|'pending'|'succeeded'|'canceled'|'refunded';paymentId?:string;confirmationUrl?:string;test:boolean;refunds?:{id:string;amount:string}[];canonicalRefundedRub?:number;receiptSentAt?:string};
@@ -107,5 +107,5 @@ export async function receiveBillingEvent(event:string,object:{id?:string;paymen
 export async function receiptSent(id:string){for(let i=0;i<5;i++){const old=await readJSON<BillingOrder>(orderPath(id));if(!old||!['succeeded','refunded'].includes(old.value.status))throw new AppError('Успешный заказ не найден.',404);try{const value={...old.value,receiptSentAt:old.value.receiptSentAt||new Date().toISOString()};await writeObject(orderPath(id),JSON.stringify(value),{etag:old.etag});return publicOrder(value)}catch(error){if(!(error instanceof AppError)||error.status!==409||i===4)throw error}}}
 
 export async function requireUserStudyAccess(uid:string,library:Library){
- if(await getUserLimits(uid)!==OWNER_LIMITS)requireStudyAccess(library);
+ if(!fullAccess(await getUserLimits(uid)))requireStudyAccess(library);
 }

@@ -3,7 +3,7 @@ import {createHash,randomUUID} from 'node:crypto';
 import {mkdir,readFile,writeFile,rename,unlink,readdir,stat} from 'node:fs/promises';
 import {join} from 'node:path';
 import {emptyLibrary,type Library,type Material,type MaterialCard,type Chat,type ChatMessage,type Topic,type AssessmentRecord} from './types';
-import {PILOT_LIMITS,OWNER_LIMITS,type UserLimits} from './plans';
+import {PILOT_LIMITS,OWNER_LIMITS,PLUS_LIMITS,PREMIUM_LIMITS,type UserLimits,type OrvoPlan} from './plans';
 export class AppError extends Error {constructor(message:string,public status=400){super(message)}}
 const local=()=>process.env.LOCAL_DATA_DIR && !process.env.VERCEL ? process.env.LOCAL_DATA_DIR : undefined;
 export const storageReady=()=>!!(local()||process.env.BLOB_READ_WRITE_TOKEN||process.env.BLOB_STORE_ID);
@@ -35,14 +35,30 @@ export async function listObjects(prefix:string,limit=100,cursor?:string):Promis
 }
 export async function readJSON<T>(path:string):Promise<{value:T;etag:string}|null>{const result=await readObject(path);return result?{value:JSON.parse(result.data.toString()),etag:result.etag}:null}
 // Resolve privileges from persisted identity, never from a client flag or display name.
-export async function getUserLimits(uid:string):Promise<UserLimits>{
+async function isOwnerId(uid:string):Promise<boolean>{
  const account=await readJSON<{id:string}>('accounts/'+createHash('sha256').update('artem').digest('hex')+'.json');
- if(account?.value.id!==uid)return PILOT_LIMITS;
+ if(account?.value.id!==uid)return false;
  const configured=process.env.OWNER_USER_ID?.trim();
- if(configured)return configured===uid?OWNER_LIMITS:PILOT_LIMITS;
- if(process.env.OWNER_USERNAME?.trim()!=='artem')return PILOT_LIMITS;
+ if(configured)return configured===uid;
+ if(process.env.OWNER_USERNAME?.trim()!=='artem')return false;
  const pinned=await readJSON<{id:string}>('operations/owner.json');
- return pinned?.value.id===uid?OWNER_LIMITS:PILOT_LIMITS;
+ return pinned?.value.id===uid;
+}
+// orvo plan as orvo ID last reported it: at sign-in and by signed webhook. until is ms, null means no end.
+export const orvoPlanPath=(uid:string)=>`${userPath(uid)}/orvo-plan.json`;
+export async function readOrvoPlan(uid:string):Promise<{plan:OrvoPlan;until:number|null}>{
+ const saved=(await readJSON<{plan:OrvoPlan;until:number|null}>(orvoPlanPath(uid)))?.value;
+ if(!saved||(saved.plan!=='plus'&&saved.plan!=='premium')||(saved.until&&saved.until<=Date.now()))return {plan:'free',until:null};
+ return saved;
+}
+export async function saveOrvoPlan(uid:string,plan:unknown,until:unknown){
+ const clean:OrvoPlan=plan==='plus'||plan==='premium'?plan:'free';
+ await writeObject(orvoPlanPath(uid),JSON.stringify({plan:clean,until:typeof until==='number'?until:null,updatedAt:new Date().toISOString()}));
+}
+export async function getUserLimits(uid:string):Promise<UserLimits>{
+ if(await isOwnerId(uid))return OWNER_LIMITS;
+ const {plan}=await readOrvoPlan(uid);
+ return plan==='premium'?PREMIUM_LIMITS:plan==='plus'?PLUS_LIMITS:PILOT_LIMITS;
 }
 export const userPath=(id:string)=>`users/${id}`;
 export const libPath=(id:string)=>`${userPath(id)}/library.json`;
