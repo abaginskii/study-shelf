@@ -19,12 +19,11 @@
 .orvo-terms{font-size:12px;line-height:1.7;color:#8b8b93;margin:10px 0 0;text-align:center}
 .orvo-terms a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 @media (prefers-reduced-motion:reduce){.orvo-button,.orvo-button::before,.orvo-mark{transition:none}.orvo-button.busy .orvo-mark svg{animation:none}}
-/* orvo plus card in the account */
-.orvo-plus-card{display:flex;align-items:center;gap:20px;color:#F3EADC;border:1px solid rgba(255,255,255,.2)!important;background:radial-gradient(110% 170% at 50% 140%,rgba(240,96,58,.55),rgba(182,64,90,.25) 45%,transparent 75%),#1A1322!important;border-radius:20px!important}
-.orvo-plus-card.plan-premium{background:radial-gradient(110% 170% at 50% 140%,rgba(242,154,58,.6),rgba(217,69,42,.25) 45%,transparent 75%),#1A1322!important}
-.orvo-plus-mark{width:56px;height:56px;flex:none;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 50% 0%,#F0603A 0%,#B6405A 45%,#6A47B8 100%);box-shadow:0 14px 40px -14px #F0603A}
+/* orvo plus card in the account: Полка's light card, orvo mark as the only accent */
+.orvo-plus-card{display:flex;align-items:center;gap:18px}
+.orvo-plus-mark{width:44px;height:44px;flex:none;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 50% 0%,#F0603A 0%,#B6405A 45%,#6A47B8 100%)}
 .plan-premium .orvo-plus-mark{background:linear-gradient(160deg,#FFD27A,#F29A3A 50%,#D9452A)}
 .orvo-plus-mark svg{width:62%;height:62%;overflow:visible}.orvo-plus-mark path{fill:none;stroke:#fff;stroke-width:12;stroke-linecap:round}
-.orvo-plus-text{flex:1;min-width:0}.orvo-plus-text h2{font:800 22px/1.2 Literata,Georgia,serif;letter-spacing:-.3px;color:#F3EADC}.orvo-plus-text p{margin-top:6px;font-size:14px;line-height:1.6;color:rgba(243,234,220,.72)}
-.orvo-plus-link{display:inline-flex;align-items:center;gap:6px;flex:none;padding:12px 18px;border-radius:999px;background:#F3EADC;color:#1A1322!important;font-weight:600;font-size:14px;text-decoration:none}
-@media(max-width:720px){.orvo-plus-card{flex-wrap:wrap}.orvo-plus-link{width:100%;justify-content:center}}
+.orvo-plus-text{flex:1;min-width:0}.orvo-plus-text h2{font-size:18px;letter-spacing:-.4px}.orvo-plus-text p{margin-top:6px;font-size:13px;line-height:1.7;color:#8a8494}
+.orvo-plus-link{display:inline-flex;align-items:center;gap:6px;flex:none;font-size:13px;color:var(--purple,#7a5ca8);text-decoration:none}
+@media(max-width:720px){.orvo-plus-card{flex-wrap:wrap}}
