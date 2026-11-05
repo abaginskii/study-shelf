@@ -25,5 +25,5 @@ export const metadata: Metadata = {
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#040506", viewportFit: "cover" };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="ru"><body><PWAProvider>{children}<TelegramPromo /></PWAProvider></body></html>;
+  return <html lang="ru"><body><div className="service-notice" role="status">Мы переносим хранилище. Сейчас можно загружать файлы до 4 МБ, а материалы, загруженные до 5 ноября, временно недоступны. Тексты, конспекты и ИИ работают.</div><PWAProvider>{children}<TelegramPromo /></PWAProvider></body></html>;
 }

@@ -19,3 +19,5 @@
 .orvo-terms{font-size:12px;line-height:1.7;color:#8b8b93;margin:10px 0 0;text-align:center}
 .orvo-terms a{color:inherit;text-decoration:underline;text-underline-offset:2px}
 @media (prefers-reduced-motion:reduce){.orvo-button,.orvo-button::before,.orvo-mark{transition:none}.orvo-button.busy .orvo-mark svg{animation:none}}
+/* Temporary notice while storage moves off Vercel Blob */
+.service-notice{position:relative;z-index:60;padding:10px 16px;background:#fff6dc;color:#5b4a1a;border-bottom:1px solid #eedfb0;font-size:13px;line-height:1.5;text-align:center}

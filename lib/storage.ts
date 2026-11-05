@@ -1,4 +1,4 @@
-import {get,put,del,list,BlobPreconditionFailedError} from '@vercel/blob';
+import {request} from 'node:https';
 import {createHash,randomUUID} from 'node:crypto';
 import {mkdir,readFile,writeFile,rename,unlink,readdir,stat} from 'node:fs/promises';
 import {join} from 'node:path';
@@ -6,29 +6,40 @@ import {emptyLibrary,type Library,type Material,type MaterialCard,type Chat,type
 import {PILOT_LIMITS,OWNER_LIMITS,type UserLimits} from './plans';
 export class AppError extends Error {constructor(message:string,public status=400){super(message)}}
 const local=()=>process.env.LOCAL_DATA_DIR && !process.env.VERCEL ? process.env.LOCAL_DATA_DIR : undefined;
-export const storageReady=()=>!!(local()||process.env.BLOB_READ_WRITE_TOKEN||process.env.BLOB_STORE_ID);
+// orvo-store on our own server replaced Vercel Blob after the free Blob quota paused every store.
+const remote=()=>process.env.STORE_URL&&process.env.STORE_TOKEN?{url:process.env.STORE_URL.replace(/\/$/,''),token:process.env.STORE_TOKEN}:null;
+const storeCa=()=>process.env.STORE_CERT_B64?Buffer.from(process.env.STORE_CERT_B64,'base64').toString():undefined;
+function storeCall(method:string,path:string,opts:{body?:Buffer;headers?:Record<string,string>}={}):Promise<{status:number;headers:Record<string,string|string[]|undefined>;data:Buffer}>{
+ const r=remote()!;
+ return new Promise((resolve,reject)=>{const req=request(r.url+path,{method,ca:storeCa(),timeout:15000,headers:{authorization:'Bearer '+r.token,...(opts.body?{'content-length':String(opts.body.length)}:{}),...(opts.headers||{})}},res=>{const chunks:Buffer[]=[];res.on('data',c=>chunks.push(c));res.on('end',()=>resolve({status:res.statusCode||0,headers:res.headers,data:Buffer.concat(chunks)}))});req.on('timeout',()=>req.destroy(new Error('orvo-store timeout')));req.on('error',reject);if(opts.body)req.write(opts.body);req.end()});
+}
+export const storageReady=()=>!!(local()||remote());
 const validPath=(path:string)=>{if(!/^[a-zA-Z0-9/_\-.]+$/.test(path)||path.includes('..'))throw new AppError('Некорректный путь');return path};
 const sha=(data:Uint8Array)=>createHash('sha256').update(data).digest('hex');
 export async function readObject(path:string):Promise<{data:Buffer;etag:string}|null>{
  validPath(path);if(!storageReady())throw new AppError('Хранилище ещё не подключено. Попробуйте позже.',503);
  if(local()){try{const data=await readFile(join(local()!,path));return {data,etag:sha(data)}}catch(e){if((e as NodeJS.ErrnoException).code==='ENOENT')return null;throw e}}
  // CAS must use the validator for the exact, uncompressed JSON representation.
- const result=await get(path,{access:'private',useCache:false,headers:{'Accept-Encoding':'identity'}});
- if(!result?.stream)return null;return {data:Buffer.from(await new Response(result.stream).arrayBuffer()),etag:result.blob.etag};
+ const res=await storeCall('GET','/o/'+path);
+ if(res.status===404)return null;if(res.status!==200)throw new Error('orvo-store GET '+res.status);
+ return {data:res.data,etag:String(res.headers.etag||sha(res.data))};
 }
 const locks=new Map<string,Promise<unknown>>();
 async function localLocked<T>(path:string,fn:()=>Promise<T>):Promise<T>{const prior=locks.get(path)||Promise.resolve();const current=prior.catch(()=>{}).then(fn);locks.set(path,current);try{return await current}finally{if(locks.get(path)===current)locks.delete(path)}}
 export async function writeObject(path:string,data:Buffer|string,options:{etag?:string;createOnly?:boolean;contentType?:string}={}):Promise<void>{
  validPath(path);if(!storageReady())throw new AppError('Хранилище ещё не подключено.',503);const bytes=Buffer.from(data);
  if(local())return localLocked(path,async()=>{const old=await readObject(path);if((options.createOnly&&old)||(options.etag&&old?.etag!==options.etag))throw new AppError('Конфликт изменений',409);const target=join(local()!,path);await mkdir(join(target,'..'),{recursive:true});const tmp=target+'.'+randomUUID();await writeFile(tmp,bytes,{mode:0o600});await rename(tmp,target)});
- try{await put(path,bytes,{access:'private',addRandomSuffix:false,allowOverwrite:!options.createOnly,ifMatch:options.etag,contentType:options.contentType||'application/json',cacheControlMaxAge:60})}catch(e){if(e instanceof BlobPreconditionFailedError || /already exists/i.test(String(e)))throw new AppError('Конфликт изменений',409);throw e}
+ const res=await storeCall('PUT','/o/'+path,{body:bytes,headers:options.etag?{'if-match':options.etag}:options.createOnly?{'if-none-match':'*'}:{}});
+ if(res.status===412)throw new AppError('Конфликт изменений',409);if(res.status===413)throw new AppError('Файл слишком большой.',413);if(res.status!==200)throw new Error('orvo-store PUT '+res.status);
 }
-export async function removeObject(path:string){validPath(path);if(local()){await unlink(join(local()!,path)).catch(e=>{if(e.code!=='ENOENT')throw e});return}await del(path)}
+export async function removeObject(path:string){validPath(path);if(local()){await unlink(join(local()!,path)).catch(e=>{if(e.code!=='ENOENT')throw e});return}await storeCall('DELETE','/o/'+path)}
 // Metadata only; access to this helper must be checked by its caller.
 export async function listObjects(prefix:string,limit=100,cursor?:string):Promise<{objects:{pathname:string;size:number;uploadedAt:string}[];cursor?:string;hasMore:boolean}>{
  if(prefix)validPath(prefix);if(!storageReady())throw new AppError('Хранилище ещё не подключено.',503);
  limit=Math.max(1,Math.min(1000,Math.floor(limit)));
- if(!local()){const result=await list({prefix,limit,cursor});return {objects:result.blobs.map(blob=>({pathname:blob.pathname,size:blob.size,uploadedAt:blob.uploadedAt.toISOString()})),cursor:result.cursor,hasMore:result.hasMore}}
+ if(!local()){const res=await storeCall('GET','/list?prefix='+encodeURIComponent(prefix));if(res.status!==200)throw new Error('orvo-store LIST '+res.status);
+  const all=(JSON.parse(res.data.toString()).items as {path:string;size:number;mtime:number}[]).map(x=>({pathname:x.path,size:x.size,uploadedAt:new Date(x.mtime).toISOString()}));
+  const start=cursor?Number(cursor):0;const hasMore=start+limit<all.length;return {objects:all.slice(start,start+limit),hasMore,cursor:hasMore?String(start+limit):undefined}}
  const objects:{pathname:string;size:number;uploadedAt:string}[]=[];
  async function walk(path:string){const entries=await readdir(join(local()!,path),{withFileTypes:true}).catch(error=>{if(error.code==='ENOENT')return [];throw error});for(const entry of entries){const pathname=path?path+'/'+entry.name:entry.name;if(entry.isDirectory())await walk(pathname);else if(entry.isFile()&&pathname.startsWith(prefix)){const info=await stat(join(local()!,pathname));objects.push({pathname,size:info.size,uploadedAt:info.mtime.toISOString()})}}}
  await walk('');objects.sort((a,b)=>a.pathname.localeCompare(b.pathname));const start=cursor?Number(cursor):0;if(!Number.isSafeInteger(start)||start<0)throw new AppError('Некорректная страница.');const hasMore=start+limit<objects.length;return {objects:objects.slice(start,start+limit),hasMore,cursor:hasMore?String(start+limit):undefined};
@@ -54,7 +65,7 @@ export async function getMaterial(uid:string,id:string){safeId(id);if(!(await ge
 export function card(m:Material):MaterialCard{return {id:m.id,title:m.title,subject:m.subject,kind:m.kind,createdAt:m.createdAt,updatedAt:m.updatedAt,status:m.status,excerpt:m.text.slice(0,200),hasFile:m.hasFile,filename:m.filename,size:m.size,revision:m.revision||1}}
 export async function saveMaterial(uid:string,m:Material,etag?:string,staged?:string){const limits=await getUserLimits(uid);await writeObject(materialPath(uid,m.id),JSON.stringify(m),etag?{etag}:{createOnly:true});await mutateLibrary(uid,lib=>{const idx=lib.materials.findIndex(x=>x.id===m.id);if(idx<0){if(etag)throw new AppError('Материал уже удалён.',404);if(lib.materials.reduce((sum,x)=>sum+(x.size||0),0)+(lib.uploads||[]).filter(x=>x.pathname!==staged).reduce((sum,x)=>sum+x.size,0)+(m.size||0)>limits.storageBytes)throw new AppError(`Лимит хранилища: ${limits.storageBytes/1048576} МБ.`);if(lib.materials.length>=limits.materials)throw new AppError(`Достигнут лимит: ${limits.materials} материалов. Удалите ненужные.`);lib.materials.unshift(card(m))}else {if((lib.materials[idx].revision||1)>(m.revision||1))throw new AppError('Материал изменён в другой вкладке.',409);lib.materials[idx]=card(m)}if(staged)lib.uploads=(lib.uploads||[]).filter(x=>x.pathname!==staged)})}
 
-export async function fileStream(path:string,range:string|null){validPath(path);if(local()){const result=await readObject(path);return result?{stream:new Response(new Uint8Array(result.data)).body,contentRange:null,size:result.data.length}:null}const result=await get(path,{access:'private',useCache:false,headers:range?{Range:range}:undefined});return result?.stream?{stream:result.stream,contentRange:result.headers.get('content-range'),size:Number(result.headers.get('content-length')||result.blob.size||0)}:null}
+export async function fileStream(path:string,range:string|null){validPath(path);const result=await readObject(path);return result?{stream:new Response(new Uint8Array(result.data)).body,contentRange:null,size:result.data.length}:null}
 
 // Rebase AI results over metadata edits, while rejecting changes to their source.
 export async function applyMaterialResult(uid:string,snapshot:Material,changes:Partial<Material>){

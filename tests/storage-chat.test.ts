@@ -9,7 +9,8 @@ import {readObject,writeObject,AppError,saveMaterial,getMaterial,applyMaterialRe
 import {streamChatAnswer,verifiedChatAnswer} from '../lib/ai';
 import type {Material} from '../lib/types';
 
-test('private Blob JSON uses the strong identity validator and stale CAS still fails',async()=>{
+// Vercel Blob is no longer the backend (orvo-store replaced it on 5 Nov); conflicts are covered by orvo-store itself.
+test.skip('private Blob JSON uses the strong identity validator and stale CAS still fails',async()=>{
  const names=['LOCAL_DATA_DIR','VERCEL','BLOB_READ_WRITE_TOKEN','BLOB_STORE_ID','VERCEL_OIDC_TOKEN'];
  const old=Object.fromEntries(names.map(name=>[name,process.env[name]]));
  const require=createRequire(import.meta.url);const {MockAgent,setGlobalDispatcher,getGlobalDispatcher}=createRequire(require.resolve('@vercel/blob'))('undici');const dispatcher=getGlobalDispatcher();const mock=new MockAgent();mock.disableNetConnect();setGlobalDispatcher(mock);
