@@ -1,8 +1,8 @@
 import {requireUser} from '@/lib/auth';
-import {getLibrary,getUserLimits} from '@/lib/storage';
+import {getLibrary,getUserLimits,readOrvoPlan} from '@/lib/storage';
 import {aiAvailable} from '@/lib/ai';
 import {json,route} from '@/lib/http';
-import {OWNER_LIMITS,AI_PERIOD_MS} from '@/lib/plans';
+import {AI_PERIOD_MS,fullAccess} from '@/lib/plans';
 import type {AccountSummary} from '@/lib/types';
 import {subscriptionAccess} from '@/lib/billing';
 import {isOwner} from '@/lib/admin-auth';
@@ -15,7 +15,7 @@ export async function GET(){return route(async()=>{
  const reservedBytes=(library.uploads||[]).reduce((sum,upload)=>sum+upload.size,0);
  const aiUsed=library.aiUsage.day===now.toISOString().slice(0,10)?library.aiUsage.count:0;
  const access:AccountSummary['access']=subscriptionAccess(library);
- if(limits===OWNER_LIMITS&&access.status==='expired'){access.status='active';access.kind='pilot';access.endsAt=undefined;access.startsAt=undefined;}
+ if(fullAccess(limits)&&access.status==='expired'){access.status='active';access.kind='pilot';access.endsAt=undefined;access.startsAt=undefined;}
  const periodStart=Date.parse(access.paid?access.startsAt||'':library.aiPeriod?.startedAt||'');
  const activePeriod=Number.isFinite(periodStart)&&periodStart<=now.getTime()&&periodStart+AI_PERIOD_MS>now.getTime();
  const periodUsed=activePeriod&&library.aiPeriod?.startedAt===new Date(periodStart).toISOString()?library.aiPeriod.count:0;
@@ -33,6 +33,7 @@ export async function GET(){return route(async()=>{
   },
   limits:{uploadBytes:limits.uploadBytes,aiFileBytes:limits.aiFileBytes,chatQuestions:limits.chatQuestions,chatAnswers:limits.chatAnswers},
   aiAvailable:aiAvailable(),owner,exportUrl:'/api/export',
+  orvo:{linked:!!user.orvoId,...await readOrvoPlan(user.id),url:(process.env.ORVO_ID_URL||'https://orvo-id.vercel.app').replace(/\/$/,'')},
  };
  return json(account);
 })}
